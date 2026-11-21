@@ -7,20 +7,17 @@ process.env.NEXT_PUBLIC_SUPABASE_URL ??= "https://test.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= "test-anon";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service";
 
-/**
- * `unstable_rethrow` propouští dál interní výjimky Next.js. V testech
- * žádné nevznikají, takže stačí nedělat nic.
- */
+/** No Next.js internal throws happen in tests, so this can be a no-op. */
 vi.mock("next/navigation", () => ({
   unstable_rethrow: () => {},
 }));
 
-/** `connection()` jen odkládá renderování na čas požadavku. */
+/** `connection()` only defers rendering to request time. */
 vi.mock("next/server", () => ({
   connection: async () => {},
 }));
 
-/** Cookies nahrazené jednoduchou mapou, ať jde testovat přihlášení. */
+/** Cookies backed by a plain map so sign-in can be tested. */
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     get: (name: string) =>

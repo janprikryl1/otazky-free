@@ -5,8 +5,8 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { LoginForm } from "./login-form";
 
 /**
- * Server component – ověří moderátorskou cookie. Musí být vždy obalený
- * v <Suspense>, protože čte data požadavku (Cache Components).
+ * Reads the moderator cookie, so it must always sit inside <Suspense>
+ * (Cache Components treats cookies as request-time data).
  */
 export async function AdminGate({ children }: { children: ReactNode }) {
   if (!(await isAdminAuthenticated())) {

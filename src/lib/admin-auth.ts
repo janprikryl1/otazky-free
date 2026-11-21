@@ -6,7 +6,7 @@ import { adminPassword } from "@/lib/env.server";
 export const ADMIN_COOKIE = "kviz_admin";
 const COOKIE_MAX_AGE = 60 * 60 * 12; // 12 hodin
 
-/** Token odvozený z hesla – nelze z něj heslo získat zpět. */
+/** One-way token derived from the password. */
 function tokenFor(password: string): string {
   return createHmac("sha256", password).update("kviz-admin-v1").digest("hex");
 }
@@ -42,7 +42,6 @@ export async function clearAdminCookie() {
   store.delete(ADMIN_COOKIE);
 }
 
-/** Je aktuální požadavek přihlášený jako moderátor? */
 export async function isAdminAuthenticated(): Promise<boolean> {
   const store = await cookies();
   const value = store.get(ADMIN_COOKIE)?.value;

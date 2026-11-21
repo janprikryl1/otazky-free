@@ -35,22 +35,21 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // Motiv doplní na <html> skript níž, takže se serverové HTML
-    // záměrně liší od toho, co vidí React při hydrataci.
+    // The script below sets data-theme on <html>, so the server HTML is
+    // meant to differ from what React expects on hydration.
     <html
       lang="cs"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        {/* Nastaví motiv ještě před vykreslením, ať nic neproblikne. */}
         {/*
-          React ve vývoji upozorní, že se skript při přechodu mezi
-          stránkami znovu nespustí – to je v pořádku, motiv stačí
-          nastavit při prvním načtení. V produkčním buildu se hlášení
-          neobjevuje. `next/script` varuje úplně stejně, jen dvakrát.
+          Applies the theme before first paint. In development React notes
+          that the script will not re-run on client navigation, which is
+          fine — the theme only needs setting on load. The notice does not
+          appear in a production build, and next/script logs it twice.
         */}
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: vlastní konstantní skript, žádný vstup od uživatele */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: constant script, no user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {children}
         <SpeedInsights />

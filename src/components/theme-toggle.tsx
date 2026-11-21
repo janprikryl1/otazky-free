@@ -7,16 +7,13 @@ import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 /**
- * Přepínač světlého a tmavého motivu pro hráčskou část.
- *
- * Plave v rohu, aby nezabíral místo – na telefonu je každý řádek drahý.
- * Moderátor má stejnou volbu schovanou ve své nabídce.
+ * Floats in the corner so it costs no layout space; on a phone every row
+ * matters. The moderator has the same choice inside their menu.
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>("dark");
   const [isReady, setIsReady] = useState(false);
 
-  // motiv nastavil skript v layoutu ještě před vykreslením
   useEffect(() => {
     setTheme(readTheme());
     setIsReady(true);
@@ -42,8 +39,8 @@ export function ThemeToggle({ className }: { className?: string }) {
         className,
       )}
     >
-      {/* Do prvního vykreslení v prohlížeči neznáme motiv, ikonu proto
-          držíme neviditelnou, ať neproblikne ta nesprávná. */}
+      {/* The theme is unknown until the first client render, so the icon
+          stays invisible rather than flashing the wrong one. */}
       <span className={isReady ? undefined : "opacity-0"}>
         {isDark ? (
           <SunIcon className="size-5" />

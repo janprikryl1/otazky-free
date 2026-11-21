@@ -76,8 +76,8 @@ export async function POST(request: Request) {
       throw dbError(error);
     }
 
-    // Vědomě nevracíme, jestli byla odpověď správná – to se hráč dozví
-    // teprve ve fázi vyhodnocení, společně s ostatními.
+    // Deliberately silent about correctness: the player learns that at
+    // the reveal, together with everyone else.
     return { accepted: true, optionIndex };
   });
 }

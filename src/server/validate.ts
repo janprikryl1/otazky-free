@@ -14,7 +14,6 @@ export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 4;
 export const MAX_NICKNAME_LENGTH = 24;
 
-/** Povinný text – očištěný, s kontrolou délky ve znacích. */
 function requiredText(value: unknown, field: string, max: number): string {
   if (typeof value !== "string") {
     throw new ApiError(`Pole „${field}“ je povinné.`, 400);
@@ -32,7 +31,6 @@ function requiredText(value: unknown, field: string, max: number): string {
   return cleaned;
 }
 
-/** Identifikátor z adresy nebo z těla požadavku. */
 export function parseUuid(value: unknown, field = "Identifikátor"): string {
   if (!isUuid(value)) {
     throw new ApiError(`${field} má neplatný formát.`, 400);
@@ -71,8 +69,8 @@ function parseTimeLimit(raw: unknown): number {
 }
 
 /**
- * Možnosti odpovědi. Prázdné se zahazují, takže se indexy posunou –
- * správnou odpověď proto mapujeme na původní pozici.
+ * Blank options are dropped, which shifts the indexes, so the correct
+ * answer is tracked by its original position.
  */
 function parseOptions(raw: unknown) {
   if (!Array.isArray(raw)) {
@@ -154,7 +152,6 @@ export function parseQuestionPayload(
   };
 }
 
-/** Seznam id otázek pro změnu pořadí. */
 export function parseIdList(value: unknown): string[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new ApiError("Chybí seznam otázek.", 400);

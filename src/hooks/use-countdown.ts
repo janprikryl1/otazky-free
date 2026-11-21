@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 
 type Countdown = {
-  /** Zbývající sekundy, zaokrouhlené nahoru. */
   secondsLeft: number;
-  /** Podíl zbývajícího času (1 = právě začalo, 0 = konec). */
+  /** Share of time left: 1 at the start, 0 at the end. */
   ratio: number;
   isOver: boolean;
 };
 
-/** Odpočet dopočítaný z časů uložených na serveru – odolný proti F5. */
+/** Derived from server timestamps, so a reload does not reset it. */
 export function useCountdown(
   endsAt: string | null,
   timeLimitSeconds: number | null,

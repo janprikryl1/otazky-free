@@ -6,24 +6,18 @@ import { apiGet, errorMessage } from "@/lib/fetcher";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
 type Options = {
-  /** Adresa, ze které se stav hry načítá. `null` = zatím nenačítat. */
+  /** `null` means do not fetch yet. */
   url: string | null;
-  /** Relace, jejíž změny se odebírají přes Supabase Realtime. */
   sessionId: string | null;
-  /** Záložní dotazování, kdyby Realtime spojení vypadlo. */
+  /** Fallback polling in case the Realtime socket drops. */
   pollMs?: number;
-  /**
-   * Zavolá se při každé neúspěšné odpovědi. Vrátí-li `true`, chybu si
-   * volající zpracoval sám a do stavu se nepropíše (třeba vypršené
-   * přihlášení moderátora, kde stačí znovu vykreslit stránku).
-   */
+  /** Return true to say the error was handled and should not be shown. */
   onError?: (error: unknown) => boolean | undefined;
 };
 
 /**
- * Drží aktuální stav hry: okamžitě reaguje na Supabase Realtime,
- * záložně se dotazuje v intervalu a vždy se obnoví, když se telefon
- * probudí nebo se karta vrátí do popředí.
+ * Keeps game state current: Realtime for immediate updates, interval polling
+ * as a fallback, and a refetch whenever the phone wakes or the tab returns.
  */
 export function useLiveState<T>({
   url,
@@ -34,8 +28,7 @@ export function useLiveState<T>({
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // adresa, ze které pocházejí zobrazená data – volající podle ní pozná,
-  // jestli odpověď odpovídá tomu, na co se ptá teď
+  // lets the caller tell whether the data matches what it asks for now
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
 
   const urlRef = useRef(url);
@@ -65,7 +58,6 @@ export function useLiveState<T>({
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
 
-  // první načtení (a při změně adresy)
   useEffect(() => {
     if (!url) {
       setIsLoading(false);
@@ -75,7 +67,7 @@ export function useLiveState<T>({
     void refreshRef.current();
   }, [url]);
 
-  // Supabase Realtime – okamžitá reakce na změnu stavu hry i na nové hráče
+  // Realtime: immediate reaction to state changes and to new players
   useEffect(() => {
     if (!sessionId) return;
 
@@ -109,7 +101,7 @@ export function useLiveState<T>({
     };
   }, [sessionId]);
 
-  // záložní dotazování
+  // fallback polling
   useEffect(() => {
     if (!url || pollMs <= 0) return;
 
@@ -117,7 +109,7 @@ export function useLiveState<T>({
     return () => window.clearInterval(timer);
   }, [url, pollMs]);
 
-  // probuzení telefonu / návrat do popředí / obnovení připojení
+  // phone waking up, tab returning to the foreground, network back
   useEffect(() => {
     if (!url) return;
 

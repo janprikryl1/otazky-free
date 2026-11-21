@@ -20,19 +20,17 @@ function safeWrite(key: string, value: string) {
   try {
     window.localStorage.setItem(key, value);
   } catch {
-    /* privátní režim nebo zakázané úložiště – hra funguje i bez obnovy */
+    // storage blocked: the game still works, just without recovery
   }
 }
 
 function safeRemove(key: string) {
   try {
     window.localStorage.removeItem(key);
-  } catch {
-    /* nic */
-  }
+  } catch {}
 }
 
-/** Načte hráče uloženého pro daný PIN (obnova po F5 / uspání telefonu). */
+/** Restores the player after a reload or the phone waking up. */
 export function loadStoredPlayer(pin: string): StoredPlayer | null {
   const raw = safeRead(PREFIX + pin);
   if (!raw) return null;
@@ -52,9 +50,7 @@ export function loadStoredPlayer(pin: string): StoredPlayer | null {
         nickname: parsed.nickname,
       };
     }
-  } catch {
-    /* poškozený záznam zahodíme */
-  }
+  } catch {}
 
   safeRemove(PREFIX + pin);
   return null;
@@ -73,28 +69,22 @@ export function clearStoredPlayer(pin: string) {
   }
 }
 
-/** PIN poslední hry, do které se hráč na tomto zařízení přihlásil. */
 export function loadLastGamePin(): string | null {
   const pin = safeRead(LAST_GAME_KEY);
   return pin && /^[0-9]{6}$/.test(pin) ? pin : null;
 }
 
 /**
- * Má se zapomenout uložený hráč a nabídnout nové přihlášení?
- *
- * Jen tehdy, když odpověď serveru opravdu patří k dotazu, který naše
- * `playerId` nesl. Hned po připojení totiž chvíli visí starší odpověď
- * načtená ještě bez `playerId` – ta `me: null` obsahuje vždy a sama
- * o sobě neznamená, že hráč ve hře není.
+ * Only forget the player when the response actually came from a request
+ * carrying their id. Right after joining, an older response fetched without
+ * playerId is still on screen and its `me: null` means nothing.
  */
 export function shouldForgetPlayer(params: {
-  /** Máme v `localStorage` uloženého hráče? */
   hasStoredPlayer: boolean;
-  /** Vrátil server `me: null`? */
   isMissingFromSession: boolean;
-  /** Adresa, ze které pochází zobrazená data. */
+  /** URL the displayed data came from. */
   loadedUrl: string | null;
-  /** Adresa, kterou bychom se ptali teď (obsahuje `playerId`). */
+  /** URL we would request now, carrying playerId. */
   currentUrl: string | null;
 }): boolean {
   const { hasStoredPlayer, isMissingFromSession, loadedUrl, currentUrl } =

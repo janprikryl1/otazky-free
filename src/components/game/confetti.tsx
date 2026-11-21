@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Slavnostní konfety při finálním vyhlášení – spustí se jednou po zobrazení. */
+/** Fires once when mounted. */
 export function Confetti() {
   useEffect(() => {
     let cancelled = false;

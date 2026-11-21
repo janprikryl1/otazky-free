@@ -1,23 +1,17 @@
-/** Jakýkoli bílý znak včetně nezlomitelné mezery a exotických mezer. */
 const ANY_WHITESPACE = /[\s   -   　]+/gu;
 
-/** Řídicí znaky C0/C1 (tabulátory a konce řádků už jsou mezerou). */
 const CONTROL_CHARS = /\p{Cc}/gu;
 
-/** Neviditelné znaky – nulová mezera, BOM, spojovník slov. */
 const INVISIBLE_CHARS = /[​‌⁠﻿]/gu;
 
-/** Přepínače směru textu – dají se zneužít ke zmatení zobrazení. */
 const BIDI_CONTROLS = /[‪-‮⁦-⁩‎‏]/gu;
 
 /**
- * Očistí text zadaný uživatelem: sjednotí mezery, zahodí neviditelné
- * a řídicí znaky a ořízne okraje. Vrací prázdný řetězec, pokud po
- * očištění nic nezbude.
+ * Strips invisible and control characters from user input.
  *
- * Pořadí je záměrné – bílé znaky (včetně `\n` a `\t`) se nejdřív změní
- * v mezeru, teprve pak se mažou zbylé řídicí znaky. Jinak by se ze
- * dvou řádků stalo jedno slepené slovo.
+ * The order matters: whitespace (including `\n` and `\t`) collapses to a
+ * space first, and only then are the remaining control characters dropped.
+ * Reversed, two lines would be glued into a single word.
  */
 export function sanitizeText(raw: unknown): string {
   if (typeof raw !== "string") return "";
@@ -29,18 +23,18 @@ export function sanitizeText(raw: unknown): string {
       .replace(CONTROL_CHARS, "")
       .replace(INVISIBLE_CHARS, "")
       .replace(BIDI_CONTROLS, "")
-      // mazání znaků mohlo nechat dvojité mezery
+      // the removals above can leave double spaces
       .replace(ANY_WHITESPACE, " ")
       .trim()
   );
 }
 
-/** Délka v znacích tak, jak ji vnímá člověk (emodži = 1 znak). */
+/** Length in characters as a person counts them: one emoji is one. */
 export function charLength(value: string): number {
   return [...value].length;
 }
 
-/** Ořízne text na daný počet znaků, aniž by rozsekl emodži. */
+/** Truncates without splitting an emoji in half. */
 export function truncate(value: string, maxChars: number): string {
   const chars = [...value];
   return chars.length <= maxChars ? value : chars.slice(0, maxChars).join("");

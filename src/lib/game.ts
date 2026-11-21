@@ -1,11 +1,9 @@
 import { charLength, sanitizeText } from "@/lib/text";
 import type { AnswerRow, LeaderboardEntry, PlayerRow } from "@/lib/types";
 
-/** Základ za správnou odpověď. */
 export const BASE_POINTS = 500;
-/** Maximální rychlostní bonus (čím dřív, tím víc). */
 export const MAX_SPEED_BONUS = 500;
-/** Tolerance pro odpovědi, které dorazí kvůli latenci sítě o chlup pozdě. */
+/** Grace period for answers delayed by network latency. */
 export const LATE_ANSWER_GRACE_MS = 1200;
 
 export const ANSWER_LABELS = ["A", "B", "C", "D"] as const;
@@ -37,10 +35,7 @@ export const ANSWER_STYLES = [
   },
 ] as const;
 
-/**
- * Body za správnou odpověď: 500 základ + až 500 podle zbývajícího času.
- * Špatná odpověď = 0 bodů (řeší volající).
- */
+/** 500 base points plus up to 500 more, scaled by the time left. */
 export function calculatePoints(options: {
   timeLimitSeconds: number;
   elapsedMs: number;
@@ -52,15 +47,11 @@ export function calculatePoints(options: {
   return BASE_POINTS + Math.round(MAX_SPEED_BONUS * remainingRatio);
 }
 
-/** Náhodný šestimístný PIN hry. */
 export function generatePin(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-/**
- * Žebříček: nejvíc bodů první, při rovnosti dřívější příchod do hry.
- * Stejný počet bodů = stejné pořadí (1, 2, 2, 4 …).
- */
+/** Ties share a rank and skip the next one: 1, 2, 2, 4. */
 export function buildLeaderboard(
   players: Pick<PlayerRow, "id" | "nickname" | "score" | "joined_at">[],
   lastPointsByPlayer?: Map<string, number>,
@@ -88,7 +79,6 @@ export function buildLeaderboard(
   });
 }
 
-/** Počty hlasů pro jednotlivé možnosti. */
 export function countVotes(
   answers: Pick<AnswerRow, "option_index">[],
   optionCount: number,
@@ -106,10 +96,7 @@ export function countVotes(
 
 export const MAX_NICKNAME_CHARS = 24;
 
-/**
- * Očištění přezdívky zadané hráčem: zahodí neviditelné a řídicí znaky,
- * sjednotí mezery a ohlídá délku. `null` = přezdívku nelze použít.
- */
+/** Returns null when the nickname is unusable. */
 export function normalizeNickname(raw: unknown): string | null {
   const cleaned = sanitizeText(raw);
   if (cleaned === "") return null;

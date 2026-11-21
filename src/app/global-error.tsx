@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 /**
- * Poslední záchrana – nahrazuje celý dokument, takže nemůže použít
- * komponenty ani globální styly. Proto má styly napsané přímo zde.
+ * Last resort: it replaces the whole document, so it cannot use the app's
+ * components or global styles. Hence the inline styling.
  */
 export default function GlobalError({
   error,
@@ -14,7 +14,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[kviz] kritická chyba", error);
+    console.error("[quiz] fatal error", error);
   }, [error]);
 
   return (

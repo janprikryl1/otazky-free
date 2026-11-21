@@ -9,7 +9,7 @@ import { parseUuid } from "@/server/validate";
 
 export async function GET(request: NextRequest) {
   return withApi(async () => {
-    // stav hry je vždy per-požadavek, nikdy se neprerenderuje
+    // game state is always per-request, never prerendered
     await connection();
 
     const params = request.nextUrl.searchParams;
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const rawPlayerId = params.get("playerId");
     const pin = params.get("pin");
 
-    // id hráče je nepovinné – před připojením ho ještě neznáme
+    // the player id is optional: before joining we do not have one
     const playerId =
       rawPlayerId === null
         ? null

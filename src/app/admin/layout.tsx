@@ -4,7 +4,6 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 import { AdminMenu } from "./admin-menu";
 
-/** Nabídka dává smysl jen přihlášenému moderátorovi. */
 async function AdminMenuSlot() {
   if (!(await isAdminAuthenticated())) return null;
   return <AdminMenu />;
@@ -18,13 +17,12 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {/*
-        Nabídka je plovoucí, ne v pruhu nad obsahem – živá hra se promítá
-        a vodorovný pruh by zbytečně ukrajoval plochu otázce. Stránky si
-        proto uvolňují levý horní roh samy (třída `pl-12` na prvním řádku)
-        a přes `useAdminMenuActions` si do nabídky přidávají vlastní akce.
+        The menu floats rather than sitting in a bar, because the live game
+        is projected. Pages keep their own top-left corner clear with
+        `pl-12` and add their own items via `useAdminMenuActions`.
 
-        Layout zůstává čistě serverový: klientská komponenta kolem
-        `children` by rozbila doručování odložených hranic uvnitř stránek.
+        This layout stays server-only: a client component around `children`
+        would break delivery of postponed boundaries inside the pages.
       */}
       <Suspense fallback={null}>
         <AdminMenuSlot />

@@ -1,7 +1,6 @@
 /**
- * Veřejné proměnné prostředí – smí je číst i kód v prohlížeči.
- * Serverové (tajné) hodnoty jsou záměrně v samostatném souboru
- * `env.server.ts`, aby se nikdy nedostaly do klientského bundlu.
+ * Public environment values, safe to read in the browser. Secrets live in
+ * `env.server.ts` so they cannot be pulled into the client bundle.
  */
 export function requireEnv(name: string, value: string | undefined): string {
   if (!value || value.trim() === "") {

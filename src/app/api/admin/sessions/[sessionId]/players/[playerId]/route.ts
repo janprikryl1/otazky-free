@@ -7,9 +7,8 @@ import { buildAdminState } from "@/server/state";
 import { parseUuid } from "@/server/validate";
 
 /**
- * Odebere hráče ze hry – třeba když se někdo připojí dvakrát nebo mu
- * umře telefon. Smazáním zmizí i jeho odpovědi (ON DELETE CASCADE)
- * a trigger sníží počítadlo hráčů.
+ * Removes a player, for a double join or a dead phone. Their answers go
+ * with them (ON DELETE CASCADE) and a trigger fixes the player count.
  */
 export async function DELETE(
   _request: Request,

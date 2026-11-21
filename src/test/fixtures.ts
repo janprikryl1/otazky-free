@@ -27,7 +27,7 @@ const DEFAULT_QUESTIONS: QuestionSpec[] = [
   },
 ];
 
-/** Vloží do fake databáze kvíz i s otázkami a vrátí jeho id. */
+/** Inserts a quiz with its questions and returns the quiz id. */
 export function seedQuiz(
   db: FakeSupabase,
   questions: QuestionSpec[] = DEFAULT_QUESTIONS,
@@ -57,7 +57,7 @@ export function seedQuiz(
   return quizId;
 }
 
-/** Přidá hráče přímo do databáze (obchází route handler). */
+/** Adds a player straight to the database, bypassing the route. */
 export function seedPlayer(
   db: FakeSupabase,
   sessionId: string,

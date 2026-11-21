@@ -15,7 +15,6 @@ function pluralVotes(count: number): string {
   return `${count} hlasů`;
 }
 
-/** Sloupcový graf hlasů u jednotlivých možností. */
 export function VoteBars({ options, counts, correctIndex }: Props) {
   const max = Math.max(1, ...counts);
 

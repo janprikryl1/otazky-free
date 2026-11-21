@@ -20,7 +20,7 @@ export default function GlobalRouteError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[kviz] chyba stránky", error);
+    console.error("[quiz] route error", error);
   }, [error]);
 
   return (

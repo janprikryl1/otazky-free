@@ -7,9 +7,8 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   options: string[];
-  /** Co hráč vybral (nebo `null`). */
   selectedIndex: number | null;
-  /** Správná odpověď – předává se teprve ve fázi vyhodnocení. */
+  /** Only passed in once the question is being revealed. */
   correctIndex?: number | null;
   disabled?: boolean;
   pendingIndex?: number | null;

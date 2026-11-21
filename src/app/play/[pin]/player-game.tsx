@@ -39,10 +39,9 @@ export function PlayerGame({ pin }: { pin: string }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Nesmyslný PIN v adrese řešíme rovnou, bez zbytečného dotazu na server.
+  // handle a malformed PIN here, without a pointless round trip
   const hasValidPin = isValidPin(pin);
 
-  // obnova relace po F5 nebo uspání telefonu
   useEffect(() => {
     setPlayer(loadStoredPlayer(pin));
     setIsHydrated(true);
@@ -56,8 +55,8 @@ export function PlayerGame({ pin }: { pin: string }) {
     return `/api/game/state?${params.toString()}`;
   }, [pin, player, hasValidPin]);
 
-  // Realtime se dá odebírat až od chvíle, kdy známe id relace. Před
-  // připojením ho zjistíme z prvního načtení stavu podle PINu.
+  // Realtime needs the session id, which before joining only arrives
+  // with the first state fetch by PIN.
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const { data, error, isLoading, refresh, loadedUrl } =
@@ -74,13 +73,12 @@ export function PlayerGame({ pin }: { pin: string }) {
     storePlayer(joined);
     setPlayer(joined);
     setNotice(null);
-    // Nenačítáme stav ručně – změnou hráče se změní i adresa dotazu
-    // a useLiveState si o nová data řekne sám. Ruční načtení by proběhlo
-    // ještě se starou adresou (bez playerId) a tvářilo by se, že hráč
-    // ve hře není.
+    // No manual refetch: setting the player changes the request URL and
+    // useLiveState reloads on its own. A manual one would still use the
+    // old URL, without playerId, and look as if the player were missing.
   }, []);
 
-  // hráč už v této hře není (byla vyresetována) → nech ho přihlásit znovu
+  // the player is gone from this game, so offer a fresh sign-in
   useEffect(() => {
     const forget = shouldForgetPlayer({
       hasStoredPlayer: player !== null,
@@ -161,7 +159,7 @@ function PlayerScreens({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      {/* pr-12 uvolňuje místo plovoucímu přepínači motivu */}
+      {/* pr-12 keeps the corner clear for the floating theme toggle */}
       <header className="flex items-center justify-between gap-3 pr-12">
         <div className="min-w-0">
           <p className="truncate font-bold text-lg leading-tight">
@@ -246,7 +244,7 @@ function QuestionView({
   const [error, setError] = useState<string | null>(null);
   const lastQuestionId = useRef<string | null>(null);
 
-  // nová otázka → vyčisti lokální volbu
+  // a new question clears the local choice
   useEffect(() => {
     if (question && lastQuestionId.current !== question.id) {
       lastQuestionId.current = question.id;

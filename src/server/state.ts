@@ -99,7 +99,7 @@ async function load(sessionId: string): Promise<Loaded> {
   };
 }
 
-/** Stav hry pro telefon hráče – nikdy neobsahuje správnou odpověď předčasně. */
+/** Never carries the correct answer before the reveal. */
 export async function buildPlayerState(
   sessionId: string,
   playerId: string | null,
@@ -135,8 +135,8 @@ export async function buildPlayerState(
         ? {
             id: me.id,
             nickname: me.nickname,
-            // Body za právě běžící otázku se připisují až při vyhodnocení,
-            // takže skóre nikdy neprozradí, jestli hráč odpověděl správně.
+            // the running question is scored only at reveal, so this
+            // never gives away whether the answer was right
             score: me.score,
             rank: myEntry.rank,
           }
@@ -159,7 +159,6 @@ export async function buildPlayerState(
   };
 }
 
-/** Stav hry pro panel moderátora – obsahuje i správné odpovědi. */
 export async function buildAdminState(
   sessionId: string,
 ): Promise<AdminGameState> {

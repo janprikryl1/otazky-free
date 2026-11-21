@@ -5,7 +5,6 @@ import type { GameSessionRow, QuestionRow } from "@/lib/types";
 
 import { getQuestions, getSessionById } from "@/server/queries";
 
-/** Jak dlouho po vypršení limitu smí server otázku uzavřít sám. */
 const AUTO_REVEAL_DELAY_MS = 1500;
 
 function questionWindow(question: QuestionRow) {
@@ -18,7 +17,6 @@ function questionWindow(question: QuestionRow) {
   };
 }
 
-/** Všechny otázky kvízu musí mít označenou správnou odpověď. */
 function assertPlayable(questions: QuestionRow[]) {
   if (questions.length === 0) {
     throw new ApiError("Kvíz neobsahuje žádné otázky.", 400);
@@ -35,7 +33,6 @@ function assertPlayable(questions: QuestionRow[]) {
   }
 }
 
-/** Vytvoří novou herní relaci s unikátním PINem. */
 export async function createSession(quizId: string): Promise<GameSessionRow> {
   const questions = await getQuestions(quizId);
   assertPlayable(questions);
@@ -49,7 +46,7 @@ export async function createSession(quizId: string): Promise<GameSessionRow> {
 
     if (!error && data) return data as GameSessionRow;
 
-    // 23505 = unique_violation → PIN už existuje, zkusíme jiný
+    // 23505 = unique_violation: the PIN is taken, try another
     if (error && error.code !== "23505") {
       throw dbError(error);
     }
@@ -61,7 +58,6 @@ export async function createSession(quizId: string): Promise<GameSessionRow> {
   );
 }
 
-/** Lobby → první otázka. */
 export async function startGame(sessionId: string): Promise<GameSessionRow> {
   const session = await getSessionById(sessionId);
 
@@ -92,9 +88,9 @@ export async function startGame(sessionId: string): Promise<GameSessionRow> {
 }
 
 /**
- * Otázka → vyhodnocení. Body se připisují právě tady, aby hráči během
- * běžící otázky nemohli z vlastního skóre vyčíst, jak odpověděli.
- * Díky podmínce na status je operace idempotentní.
+ * Points are applied here rather than on answer, so a player cannot read
+ * their own score mid-question to learn whether they were right. Guarding
+ * on status keeps the transition idempotent.
  */
 export async function revealQuestion(
   sessionId: string,
@@ -121,7 +117,7 @@ export async function revealQuestion(
 
   if (error) throw dbError(error);
 
-  // Jiný požadavek nás předběhl – body už připsal on.
+  // another request won the race and already applied the points
   if (!data) return getSessionById(sessionId);
 
   const { error: scoreError } = await db().rpc("apply_question_scores", {
@@ -134,14 +130,13 @@ export async function revealQuestion(
   return data as GameSessionRow;
 }
 
-/** Vyhodnocení → další otázka, nebo konec hry. */
 export async function nextQuestion(sessionId: string): Promise<GameSessionRow> {
   const session = await getSessionById(sessionId);
 
   if (session.status === "finished") return session;
 
   if (session.status === "question") {
-    // nejdřív uzavřeme a vyhodnotíme běžící otázku
+    // close and score the running question first
     await revealQuestion(sessionId);
   }
 
@@ -176,7 +171,6 @@ export async function nextQuestion(sessionId: string): Promise<GameSessionRow> {
   return data as GameSessionRow;
 }
 
-/** Předčasné ukončení celé hry. */
 export async function finishGame(sessionId: string): Promise<GameSessionRow> {
   const session = await getSessionById(sessionId);
 
@@ -201,8 +195,8 @@ export async function finishGame(sessionId: string): Promise<GameSessionRow> {
 }
 
 /**
- * Pojistka: když moderátorovi spadne obrazovka, uzavře se otázka sama
- * krátce po vypršení limitu – hráči se tak vždy dostanou k vyhodnocení.
+ * Safety net: if the moderator's screen dies, the question closes itself
+ * shortly after the limit so players still reach the reveal.
  */
 export async function autoRevealIfExpired(
   session: GameSessionRow,

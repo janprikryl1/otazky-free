@@ -1,10 +1,10 @@
 /**
- * Minimalistická náhrada Supabase klienta pro testy.
+ * In-memory stand-in for the Supabase client.
  *
- * Drží data v paměti a napodobuje jen tu část dotazovacího API, kterou
- * aplikace skutečně používá. Navíc hlídá unikátní indexy a spouští
- * stejné triggery jako migrace, aby testy odhalily i chyby, které by se
- * jinak projevily až proti ostré databázi.
+ * It mimics only the query API the app actually uses, but it does enforce
+ * the unique indexes and run the same triggers as the migration, so tests
+ * can catch faults that would otherwise surface only against a real
+ * database.
  */
 
 type Row = Record<string, unknown>;
@@ -17,7 +17,7 @@ type Filter = { column: string; value: unknown };
 
 type Order = { column: string; ascending: boolean };
 
-/** Unikátní indexy odpovídající migraci 0001_init.sql. */
+/** Mirrors the unique indexes from 0001_init.sql. */
 const UNIQUE_INDEXES: Record<string, ((row: Row) => string)[]> = {
   game_sessions: [(row) => `pin:${String(row.pin)}`],
   players: [
@@ -34,15 +34,12 @@ const DUPLICATE_ERROR: QueryError = {
   message: "duplicate key value violates unique constraint",
 };
 
-/**
- * Vnořené výběry, které aplikace používá, například
- * `select("id, title, questions(id, correct_index)")`.
- */
+/** Embedded selects the app uses, e.g. `questions(id, correct_index)`. */
 type Relation = {
   table: string;
-  /** Sloupec na druhé straně vazby (pro 1:N). */
+  /** Column on the far side, for one-to-many. */
   foreignKey?: string;
-  /** Sloupec na této straně vazby (pro N:1). */
+  /** Column on this side, for many-to-one. */
   localKey?: string;
   many: boolean;
 };
@@ -60,7 +57,7 @@ const EMBED_PATTERN = /(\w+)\s*\(([^)]*)\)/g;
 
 let idCounter = 0;
 
-/** Deterministické UUID, aby testy nebyly závislé na náhodě. */
+/** Deterministic UUIDs keep tests independent of randomness. */
 export function testUuid(seed?: number): string {
   const n = seed ?? ++idCounter;
   const hex = n.toString(16).padStart(12, "0");
@@ -80,7 +77,7 @@ export class FakeSupabase {
     answers: [],
   };
 
-  /** Kolik dotazů proběhlo – hodí se na kontrolu, že se něco neděje v cyklu. */
+  /** Query count, useful for asserting something is not run in a loop. */
   queryCount = 0;
 
   from(table: string) {
@@ -110,7 +107,7 @@ export class FakeSupabase {
     return { data: null, error: null };
   }
 
-  /** Triggery z migrace: počítadla na game_sessions. */
+  /** The migration's triggers: counters on game_sessions. */
   runInsertTriggers(table: string, row: Row) {
     if (table === "answers") {
       const session = this.findSession(row.session_id);
@@ -140,7 +137,7 @@ export class FakeSupabase {
     return this.tables.game_sessions.find((row) => row.id === id);
   }
 
-  /** Výchozí hodnoty sloupců podle schématu. */
+  /** Column defaults as declared by the schema. */
   defaultsFor(table: string): Row {
     const now = new Date().toISOString();
 
@@ -256,10 +253,10 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     return this;
   }
 
-  // Builder Supabase je záměrně "thenable" – právě díky tomu jde psát
-  // `await db.from(...)`. Náhrada se musí chovat stejně, jinak by testy
-  // netestovaly skutečné API.
-  // biome-ignore lint/suspicious/noThenProperty: napodobuje API Supabase klienta
+  // The Supabase builder is deliberately thenable, which is what makes
+  // `await db.from(...)` work. The stand-in has to match, or the tests
+  // would not exercise the real API shape.
+  // biome-ignore lint/suspicious/noThenProperty: mirrors the Supabase client API
   then<TResult1 = Result<Row[] | Row | null>, TResult2 = never>(
     onfulfilled?:
       | ((
@@ -295,7 +292,7 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     });
   }
 
-  /** Doplní vnořené výběry (`questions(...)`, `quizzes(...)`). */
+  /** Fills in embedded selects such as `questions(...)`. */
   private withEmbeds(row: Row): Row {
     if (this.embeds.length === 0) return { ...row };
 
@@ -417,7 +414,7 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     return this.shape(rows);
   }
 
-  /** ON DELETE CASCADE pro vazby, které testy používají. */
+  /** ON DELETE CASCADE for the relations the tests rely on. */
   private cascade(row: Row) {
     const cascades: Record<string, [string, string][]> = {
       quizzes: [

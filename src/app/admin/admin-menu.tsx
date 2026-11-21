@@ -17,22 +17,21 @@ import { apiSend } from "@/lib/fetcher";
 import { applyTheme, readTheme, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
-/** Položka, kterou si stránka může do nabídky přidat sama. */
 export type AdminMenuAction = {
   label: string;
   icon: LucideIcon;
   onSelect: () => void;
-  /** Zvýrazní položku jako nevratnou (ukončení hry a podobně). */
+  /** Marks the item as irreversible, such as ending the game. */
   danger?: boolean;
 };
 
 /**
- * Stránkové položky nabídky držíme mimo React strom.
+ * Page-provided menu items live outside the React tree on purpose.
  *
- * Nabídka a stránka jsou sourozenci, takže společný context by musel
- * obalit obsah layoutu – a klientská komponenta kolem odložených
- * serverových hranic brání tomu, aby se na stránku doručil jejich
- * obsah (stránka pak navždy visí na „Načítám…“).
+ * The menu and the page are siblings, so a shared context would have to
+ * wrap the layout's children — and a client component around postponed
+ * server boundaries stops their content from ever being delivered,
+ * leaving every page stuck on its loading fallback.
  */
 const EMPTY: AdminMenuAction[] = [];
 
@@ -52,9 +51,8 @@ function subscribe(listener: () => void) {
 }
 
 /**
- * Přidá stránkové položky do plovoucí nabídky a při odchodu je uklidí.
- * `actions` si volající musí zapamatovat (useMemo), jinak se bude
- * registrace opakovat donekonečna.
+ * Adds page items to the menu and clears them on unmount. The caller must
+ * memoize `actions`, otherwise registration loops forever.
  */
 export function useAdminMenuActions(actions: AdminMenuAction[]) {
   useEffect(() => {
@@ -64,10 +62,8 @@ export function useAdminMenuActions(actions: AdminMenuAction[]) {
 }
 
 /**
- * Plovoucí nabídka moderátora v rohu obrazovky.
- *
- * Záměrně nezabírá místo v layoutu – živá hra se promítá na projektor
- * a každý pruh navíc ukrajuje plochu otázce.
+ * Floats in the corner instead of taking a row in the layout: the live
+ * game is projected, and every bar steals space from the question.
  */
 export function AdminMenu() {
   const router = useRouter();
@@ -83,18 +79,15 @@ export function AdminMenu() {
   const [theme, setTheme] = useState<Theme>("dark");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // motiv nastavil skript v hlavičce ještě před vykreslením
   useEffect(() => {
     setTheme(readTheme());
   }, []);
 
-  // zavři při přechodu na jinou stránku
-  // biome-ignore lint/correctness/useExhaustiveDependencies: zavíráme právě při změně adresy
+  // biome-ignore lint/correctness/useExhaustiveDependencies: closing on route change is the point
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
 
-  // zavři Escapem
   useEffect(() => {
     if (!isOpen) return;
 
@@ -106,7 +99,6 @@ export function AdminMenu() {
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
-  // po otevření přesuň pozornost do nabídky
   useEffect(() => {
     if (isOpen) panelRef.current?.focus();
   }, [isOpen]);
@@ -150,7 +142,7 @@ export function AdminMenu() {
 
       {isOpen ? (
         <>
-          {/* kliknutí mimo nabídku ji zavře */}
+          {/* click-outside catcher */}
           <button
             type="button"
             tabIndex={-1}

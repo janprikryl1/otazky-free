@@ -85,9 +85,8 @@ export function QuestionDialog({ quizId, draft, onClose, onSaved }: Props) {
     setIsSending(true);
     setError(null);
 
-    // Posíláme všechny čtyři sloty včetně prázdných – server si je
-    // pročistí a přepočítá index správné odpovědi. Logika přeindexování
-    // tak žije na jednom místě.
+    // Send all four slots, blanks included. The server prunes them and
+    // recomputes the correct index, so that logic lives in one place.
     const payload = { text, timeLimit, options, correctIndex };
 
     try {

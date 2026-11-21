@@ -27,7 +27,6 @@ const STEPS = [
   },
 ] as const;
 
-/** Slavnostní pódium pro 1.–3. místo. */
 export function Podium({ entries }: { entries: LeaderboardEntry[] }) {
   const byRank = new Map<number, LeaderboardEntry>();
 

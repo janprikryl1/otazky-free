@@ -6,7 +6,7 @@ type Props = {
   className?: string;
 };
 
-/** Kruhový odpočet – červená poslední pětisekundovka. */
+/** Turns red for the last five seconds. */
 export function CountdownRing({ secondsLeft, ratio, className }: Props) {
   const urgent = secondsLeft <= 5;
   const degrees = Math.round(ratio * 360);

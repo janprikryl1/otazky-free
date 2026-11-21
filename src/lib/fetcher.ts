@@ -4,7 +4,6 @@ const GENERIC_ERROR =
 const OFFLINE_ERROR =
   "Jsi offline. Jakmile se připojení obnoví, hra bude pokračovat.";
 
-/** Chyba odpovědi serveru i se stavovým kódem. */
 export class ApiRequestError extends Error {
   readonly status: number;
 
@@ -15,7 +14,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-/** Vypršela moderátorská cookie? Pak je potřeba se znovu přihlásit. */
+/** True when the moderator cookie expired and a new sign-in is needed. */
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof ApiRequestError && error.status === 401;
 }

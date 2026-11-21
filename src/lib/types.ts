@@ -1,5 +1,3 @@
-// ---------------------------------------------------------------- doména
-
 export type GameStatus = "lobby" | "question" | "reveal" | "finished";
 
 export type QuizRow = {
@@ -51,8 +49,6 @@ export type AnswerRow = {
   points: number;
   answered_at: string;
 };
-
-// --------------------------------------------- typy pro supabase-js klienta
 
 type Insertable<T, Optional extends keyof T> = Omit<T, Optional> &
   Partial<Pick<T, Optional>>;
@@ -119,8 +115,6 @@ export type Database = {
   };
 };
 
-// ------------------------------------------------------- přenosové objekty
-
 export type LeaderboardEntry = {
   playerId: string;
   nickname: string;
@@ -142,7 +136,7 @@ export type SessionSummary = {
   quizTitle: string;
 };
 
-/** Otázka tak, jak ji smí vidět hráč – BEZ správné odpovědi. */
+/** What a player may see: deliberately without the correct answer. */
 export type PublicQuestion = {
   id: string;
   index: number;

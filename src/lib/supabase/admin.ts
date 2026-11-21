@@ -6,9 +6,8 @@ import type { Database } from "@/lib/types";
 let cached: ReturnType<typeof createClient<Database>> | null = null;
 
 /**
- * Serverový Supabase klient se service-role klíčem.
- * Obchází RLS, takže vidí i otázky včetně správných odpovědí.
- * Smí se používat VÝHRADNĚ v route handlerech / server actions.
+ * Service-role client. It bypasses RLS and can therefore read the correct
+ * answers, so it must never be imported by client code.
  */
 export function supabaseAdmin() {
   if (cached) return cached;

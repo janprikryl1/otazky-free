@@ -47,7 +47,7 @@ function plural(count: number, one: string, few: string, many: string) {
 export function HostConsole({ sessionId }: { sessionId: string }) {
   const router = useRouter();
 
-  // vypršelá moderátorská cookie → zpátky na přihlášení
+  // expired moderator cookie sends us back to the sign-in screen
   const handleAuthError = useCallback(
     (caught: unknown) => {
       if (!isUnauthorized(caught)) return false;
@@ -159,7 +159,7 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      {/* pl-12 uvolňuje místo plovoucímu tlačítku nabídky */}
+      {/* pl-12 keeps the corner clear for the floating menu button */}
       <header className="flex flex-wrap items-center justify-between gap-3 pl-12">
         <div className="min-w-0">
           <h1 className="truncate font-black text-2xl tracking-tight">
@@ -174,8 +174,8 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
           </p>
         </div>
 
-        {/* „Ukončit hru“ i odkaz na kvízy žijí v plovoucí nabídce,
-            ať na promítané obrazovce nepřekáží ovládací prvky. */}
+        {/* Ending the game and the quizzes link live in the floating menu,
+            to keep controls off the projected screen. */}
         <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
           <UsersIcon />
           {session.playerCount}
@@ -347,7 +347,7 @@ function QuestionPhase({
     question?.timeLimit ?? null,
   );
 
-  // po vypršení času uzavřeme hlasování automaticky
+  // close the vote automatically once the time runs out
   const revealedFor = useRef<string | null>(null);
 
   useEffect(() => {

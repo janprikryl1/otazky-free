@@ -85,7 +85,7 @@ export function QuizEditor({ quizId }: { quizId: string }) {
     const ids = quiz.questions.map((question) => question.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
 
-    // optimistické přerovnání, ať UI neposkakuje
+    // reorder optimistically so the list does not jump
     const reordered = [...quiz.questions];
     [reordered[index], reordered[target]] = [
       reordered[target],

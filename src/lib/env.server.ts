@@ -1,8 +1,8 @@
 import { requireEnv } from "@/lib/env";
 
 /**
- * Tajné proměnné prostředí. Tento soubor smí importovat pouze serverový kód
- * (route handlery a moduly ve `src/server`), nikdy komponenta s "use client".
+ * Secrets. Only server code may import this file — never a "use client"
+ * component, or the values would end up in the browser bundle.
  */
 export function serverSupabaseConfig() {
   return {

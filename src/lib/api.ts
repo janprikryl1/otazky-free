@@ -1,6 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 
-/** Chyba, kterou je bezpečné poslat klientovi (česky). */
+/** An error whose message is safe to show the user. */
 export class ApiError extends Error {
   readonly status: number;
 
@@ -14,10 +14,7 @@ export class ApiError extends Error {
 const NETWORK_HINTS =
   /fetch failed|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|getaddrinfo|socket hang up/i;
 
-/**
- * Přeloží chybu z Supabase na srozumitelnou českou hlášku.
- * Technický detail zůstává v serverovém logu.
- */
+/** Turns a Supabase error into a message the user can act on. */
 export function dbError(error: { message: string; code?: string }): ApiError {
   console.error("[supabase]", error);
 
@@ -65,20 +62,19 @@ export function jsonError(message: string, status = 400) {
   );
 }
 
-/** Obalí handler, přeloží vyhozené chyby na JSON odpověď. */
 export async function withApi<T>(fn: () => Promise<T>) {
   try {
     return jsonOk(await fn());
   } catch (error) {
-    // Interní výjimky Next.js (redirect, notFound, přerušení prerenderu)
-    // musí probublat dál – nejsou to chyby aplikace.
+    // redirect(), notFound() and prerender interrupts travel as throws;
+    // swallowing them would break the framework.
     unstable_rethrow(error);
 
     if (error instanceof ApiError) {
       return jsonError(error.message, error.status);
     }
 
-    console.error("[api] neočekávaná chyba", error);
+    console.error("[api] unexpected error", error);
 
     const message =
       error instanceof Error && error.message.startsWith("Chybí proměnná")
@@ -89,7 +85,6 @@ export async function withApi<T>(fn: () => Promise<T>) {
   }
 }
 
-/** Horní mez pro tělo požadavku – žádný legitimní vstup není větší. */
 const MAX_BODY_BYTES = 64 * 1024;
 
 export async function readJson(request: Request): Promise<unknown> {

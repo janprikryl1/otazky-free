@@ -8,9 +8,8 @@ import type { Database } from "@/lib/types";
 let cached: ReturnType<typeof createClient<Database>> | null = null;
 
 /**
- * Klient pro prohlížeč (anon klíč). Používá se pouze pro Supabase Realtime
- * – tedy pro odběr změn na tabulkách `game_sessions` a `players`.
- * Veškerá herní logika i data o otázkách jdou přes /api route handlery.
+ * Browser client, used only to subscribe to Realtime changes on
+ * `game_sessions` and `players`. Everything else goes through /api.
  */
 export function supabaseBrowser() {
   if (cached) return cached;

@@ -15,7 +15,7 @@ export type AdminSessionListItem = {
   quizTitle: string;
 };
 
-/** Posledních 20 her – ať se moderátor po zavření okna umí vrátit do hry. */
+/** Recent games, so the moderator can get back after closing the tab. */
 export async function GET() {
   return withApi(async () => {
     await connection();
