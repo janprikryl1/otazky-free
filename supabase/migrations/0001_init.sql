@@ -205,6 +205,8 @@ begin
     when duplicate_object then null;
     when undefined_object then
       raise notice 'Publikace supabase_realtime neexistuje – zapni Realtime v Supabase.';
+    when insufficient_privilege then
+      raise notice 'Na publikaci supabase_realtime chybí práva – přidej tabulky ručně v Database → Replication.';
   end;
 
   begin
@@ -212,6 +214,7 @@ begin
   exception
     when duplicate_object then null;
     when undefined_object then null;
+    when insufficient_privilege then null;
   end;
 end;
 $$;
