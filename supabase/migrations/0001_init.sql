@@ -170,6 +170,29 @@ create policy players_public_read
   to anon, authenticated
   using (true);
 
+-- ---------------------------------------------------------------------
+--  Přístupová práva pro Data API
+--
+--  RLS sama o sobě nestačí – role ještě potřebuje GRANT na tabulku.
+--  Zadáváme je výslovně, aby migrace fungovala bez ohledu na volbu
+--  „Grant API access to new tables automatically“ při zakládání projektu.
+-- ---------------------------------------------------------------------
+
+grant usage on schema public to anon, authenticated, service_role;
+
+-- server (service-role klíč) obsluhuje celou herní logiku
+grant select, insert, update, delete on
+  public.quizzes,
+  public.questions,
+  public.game_sessions,
+  public.players,
+  public.answers
+  to service_role;
+
+-- telefony hráčů smí číst jen stav hry a seznam hráčů (kvůli Realtime)
+grant select on public.game_sessions to anon, authenticated;
+grant select on public.players       to anon, authenticated;
+
 -- =====================================================================
 --  Realtime – publikace tabulek, které klienti odebírají
 -- =====================================================================

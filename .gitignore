@@ -47,3 +47,7 @@ next-env.d.ts
 .eslintcache
 .turbo
 .swc
+
+# IDE
+.idea/
+.vscode/

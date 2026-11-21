@@ -51,8 +51,19 @@ Supabase Realtime:
 ## Krok 1 – Založení Supabase projektu
 
 1. Jdi na [supabase.com](https://supabase.com) a přihlas se (stačí free tarif).
-2. **New project** → zvol název (např. `narozeninovy-kviz`), heslo k databázi
-   a region **Central EU (Frankfurt)** kvůli nízké odezvě.
+2. Klikni na **New project** a vyplň formulář:
+
+   | Políčko | Co nastavit |
+   | --- | --- |
+   | **Organization** | tvoje organizace (free tarif stačí) |
+   | **GitHub (optional)** | nech **nepřipojené** – schéma pouštíme ručně v SQL editoru, integrace by chtěla navíc `supabase/config.toml` a CLI projekt |
+   | **Project name** | třeba `narozeninovy-kviz` |
+   | **Database password** | vygeneruj silné a ulož do správce hesel (aplikace ho nepotřebuje, hodí se jen pro přímý přístup k Postgresu) |
+   | **Region** | **Central EU (Frankfurt)** kvůli nízké odezvě z Česka |
+   | **Enable Data API** | ✅ **zapnuto** – bez něj se aplikace k databázi vůbec nedostane |
+   | **Grant API access to new tables automatically** | ✅ zapni; migrace si práva nastavuje i sama, takže projde i bez toho |
+   | **Enable RLS on new tables automatically** | ✅ zapni – bezpečnější výchozí stav, migrace RLS stejně zapíná u všech tabulek |
+
 3. Počkej 1–2 minuty, než se projekt vytvoří.
 
 ---
@@ -98,9 +109,15 @@ A vyplň ho:
 | Proměnná | Kde ji vzít | Poznámka |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → *Project URL* | např. `https://abcdefgh.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → *anon public* | veřejný klíč, jde do prohlížeče |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → *service_role* | **tajný!** jen na serveru |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → *anon public* (nebo *Publishable key*) | veřejný klíč, jde do prohlížeče |
+| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → *service_role* (nebo *Secret key*) | **tajný!** jen na serveru |
 | `ADMIN_PASSWORD` | vymyslíš sám | heslo do `/admin` |
+
+> **Nové projekty mají klíče jinak pojmenované.** Supabase přešel z dvojice
+> `anon` / `service_role` (dlouhé JWT začínající `eyJ…`) na
+> *Publishable key* (`sb_publishable_…`) a *Secret key* (`sb_secret_…`).
+> Aplikace funguje s obojím – důležité je, že do `NEXT_PUBLIC_…` patří ten
+> veřejný a do `SUPABASE_SERVICE_ROLE_KEY` ten tajný.
 
 > **Proč i `service_role` klíč?**
 > Zadání počítalo jen se třemi proměnnými, ale s pouhým `anon` klíčem by si
