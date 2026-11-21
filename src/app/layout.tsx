@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { THEME_SCRIPT } from "@/lib/theme";
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,9 +44,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         {/* Nastaví motiv ještě před vykreslením, ať nic neproblikne. */}
-        <Script id="motiv" strategy="beforeInteractive">
-          {THEME_SCRIPT}
-        </Script>
+        {/*
+          React ve vývoji upozorní, že se skript při přechodu mezi
+          stránkami znovu nespustí – to je v pořádku, motiv stačí
+          nastavit při prvním načtení. V produkčním buildu se hlášení
+          neobjevuje. `next/script` varuje úplně stejně, jen dvakrát.
+        */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: vlastní konstantní skript, žádný vstup od uživatele */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {children}
         <SpeedInsights />
       </body>
