@@ -332,7 +332,7 @@ pro doplnění dalších.
 | *„V databázi chybí tabulky kvízu“* | Nebyl spuštěn `supabase/migrations/0001_init.sql`. |
 | *„U těchto otázek není označená správná odpověď“* | Otevři editor kvízu a u vypsaných otázek zaškrtni správnou možnost. |
 | *„Chybí proměnná prostředí ADMIN_PASSWORD“* | Doplň ji do `.env.local`, resp. do nastavení Vercelu. |
-| Jména hráčů nenaskakují živě | V Supabase → **Database → Replication** ověř, že publikace `supabase_realtime` obsahuje tabulky `game_sessions` a `players`. Migrace je tam přidává automaticky. |
+| Jména hráčů nenaskakují živě | V Supabase → **Database → Publications** otevři publikaci `supabase_realtime` a ověř, že obsahuje tabulky `game_sessions` a `players`. Migrace je tam přidává automaticky. |
 | *„Tuhle přezdívku už někdo používá“* | Přezdívky musí být v rámci jedné hry unikátní – stačí zvolit jinou. |
 | *„Identifikátor … má neplatný formát“* | V adrese je poškozené id. Vrať se na `/admin` a otevři kvíz nebo hru znovu. |
 | *„Odeslaná data jsou příliš velká“* | Zkrať text otázky nebo možností – limit těla požadavku je 64 kB. |
