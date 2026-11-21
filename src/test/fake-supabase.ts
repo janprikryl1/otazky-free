@@ -24,13 +24,39 @@ const UNIQUE_INDEXES: Record<string, ((row: Row) => string)[]> = {
     (row) =>
       `nick:${String(row.session_id)}:${String(row.nickname).trim().toLowerCase()}`,
   ],
-  answers: [(row) => `answer:${String(row.question_id)}:${String(row.player_id)}`],
+  answers: [
+    (row) => `answer:${String(row.question_id)}:${String(row.player_id)}`,
+  ],
 };
 
 const DUPLICATE_ERROR: QueryError = {
   code: "23505",
   message: "duplicate key value violates unique constraint",
 };
+
+/**
+ * Vnořené výběry, které aplikace používá, například
+ * `select("id, title, questions(id, correct_index)")`.
+ */
+type Relation = {
+  table: string;
+  /** Sloupec na druhé straně vazby (pro 1:N). */
+  foreignKey?: string;
+  /** Sloupec na této straně vazby (pro N:1). */
+  localKey?: string;
+  many: boolean;
+};
+
+const RELATIONS: Record<string, Record<string, Relation>> = {
+  quizzes: {
+    questions: { table: "questions", foreignKey: "quiz_id", many: true },
+  },
+  game_sessions: {
+    quizzes: { table: "quizzes", localKey: "quiz_id", many: false },
+  },
+};
+
+const EMBED_PATTERN = /(\w+)\s*\(([^)]*)\)/g;
 
 let idCounter = 0;
 
@@ -173,17 +199,16 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
   private rowLimit: number | null = null;
   private wantsRows = false;
   private cardinality: "many" | "single" | "maybe" = "many";
+  private embeds: string[] = [];
 
   constructor(
     private readonly db: FakeSupabase,
     private readonly table: string,
   ) {}
 
-  select(_columns = "*") {
-    if (this.op === "select") {
-      this.op = "select";
-    }
+  select(columns = "*") {
     this.wantsRows = true;
+    this.embeds = [...columns.matchAll(EMBED_PATTERN)].map((match) => match[1]);
     return this;
   }
 
@@ -231,9 +256,15 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     return this;
   }
 
+  // Builder Supabase je záměrně "thenable" – právě díky tomu jde psát
+  // `await db.from(...)`. Náhrada se musí chovat stejně, jinak by testy
+  // netestovaly skutečné API.
+  // biome-ignore lint/suspicious/noThenProperty: napodobuje API Supabase klienta
   then<TResult1 = Result<Row[] | Row | null>, TResult2 = never>(
     onfulfilled?:
-      | ((value: Result<Row[] | Row | null>) => TResult1 | PromiseLike<TResult1>)
+      | ((
+          value: Result<Row[] | Row | null>,
+        ) => TResult1 | PromiseLike<TResult1>)
       | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): PromiseLike<TResult1 | TResult2> {
@@ -264,6 +295,35 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     });
   }
 
+  /** Doplní vnořené výběry (`questions(...)`, `quizzes(...)`). */
+  private withEmbeds(row: Row): Row {
+    if (this.embeds.length === 0) return { ...row };
+
+    const result: Row = { ...row };
+    const relations = RELATIONS[this.table] ?? {};
+
+    for (const name of this.embeds) {
+      const relation = relations[name];
+      if (!relation) continue;
+
+      const target = this.db.tables[relation.table] ?? [];
+
+      if (relation.many && relation.foreignKey) {
+        const key = relation.foreignKey;
+        result[name] = target
+          .filter((child) => child[key] === row.id)
+          .map((child) => ({ ...child }));
+      } else if (relation.localKey) {
+        const parent = target.find(
+          (candidate) => candidate.id === row[relation.localKey as string],
+        );
+        result[name] = parent ? { ...parent } : null;
+      }
+    }
+
+    return result;
+  }
+
   private shape(rows: Row[]): Result<Row[] | Row | null> {
     if (this.cardinality === "single") {
       if (rows.length !== 1) {
@@ -275,14 +335,17 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
           },
         };
       }
-      return { data: { ...rows[0] }, error: null };
+      return { data: this.withEmbeds(rows[0]), error: null };
     }
 
     if (this.cardinality === "maybe") {
-      return { data: rows.length > 0 ? { ...rows[0] } : null, error: null };
+      return {
+        data: rows.length > 0 ? this.withEmbeds(rows[0]) : null,
+        error: null,
+      };
     }
 
-    return { data: rows.map((row) => ({ ...row })), error: null };
+    return { data: rows.map((row) => this.withEmbeds(row)), error: null };
   }
 
   private run(): Result<Row[] | Row | null> {
@@ -292,12 +355,17 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
     if (!table) {
       return {
         data: null,
-        error: { code: "42P01", message: `relation ${this.table} does not exist` },
+        error: {
+          code: "42P01",
+          message: `relation ${this.table} does not exist`,
+        },
       };
     }
 
     if (this.op === "insert") {
-      const incoming = Array.isArray(this.payload) ? this.payload : [this.payload];
+      const incoming = Array.isArray(this.payload)
+        ? this.payload
+        : [this.payload];
       const created: Row[] = [];
 
       for (const item of incoming) {
@@ -312,9 +380,7 @@ class FakeQuery implements PromiseLike<Result<Row[] | Row | null>> {
         created.push(row);
       }
 
-      return this.wantsRows
-        ? this.shape(created)
-        : { data: null, error: null };
+      return this.wantsRows ? this.shape(created) : { data: null, error: null };
     }
 
     if (this.op === "update") {

@@ -21,8 +21,9 @@ Aplikace je bezstavová – běží na **Vercelu** bez vlastního Node.js server
 7. [Krok 6 – Nasazení na Vercel](#krok-6--nasazení-na-vercel)
 8. [Jak hru odmoderovat](#jak-hru-odmoderovat)
 9. [Bodování](#bodování)
-10. [Technické poznámky](#technické-poznámky)
-11. [Řešení problémů](#řešení-problémů)
+10. [Testy](#testy)
+11. [Technické poznámky](#technické-poznámky)
+12. [Řešení problémů](#řešení-problémů)
 
 ---
 
@@ -140,6 +141,10 @@ pnpm build
 pnpm lint
 ```
 
+```powershell
+pnpm test
+```
+
 ---
 
 ## Krok 6 – Nasazení na Vercel
@@ -208,6 +213,38 @@ jestli odpověděl správně.
 
 ---
 
+## Testy
+
+Herní logika a všechny API endpointy mají automatické testy (Vitest).
+Spustí se bez Supabase – databáze je v testech nahrazená věrnou pamětovou
+atrapou, která hlídá i unikátní indexy a triggery z migrace.
+
+```powershell
+pnpm test
+```
+
+```powershell
+pnpm test:watch
+```
+
+Co je pokryté:
+
+| Oblast | Co se ověřuje |
+| --- | --- |
+| Bodování | základ i rychlostní bonus, nula za špatnou odpověď, odolnost proti rozcházejícím se hodinám |
+| Žebříček | řazení, shodné pořadí při rovnosti bodů, přednost dřívějšího příchodu |
+| Průběh hry | čekárna → otázka → vyhodnocení → vyhlášení, limity jednotlivých otázek, předčasné ukončení |
+| Připisování bodů | body až při vyhodnocení, žádné dvojí připsání ani při opakovaném či souběžném kliknutí |
+| Připojení hráče | očista přezdívky, unikátnost v rámci hry, odmítnutí dohrané hry |
+| Odpovídání | jedna odpověď na otázku, uzavření po čase, tolerance zpoždění sítě, možnost mimo rozsah |
+| Utajení odpovědí | odpověď serveru hráči během otázky neobsahuje správnou možnost ani nepřímo |
+| Přihlášení | heslo se neukládá do cookie v čitelné podobě, padělaná cookie neprojde |
+| Ochrana API | všech 13 admin endpointů vrací bez přihlášení 401 a data nechá beze změny |
+| Vstupy | neplatná UUID, nečitelné JSON, příliš velké tělo, duplicitní možnosti, rozsah časového limitu |
+| Chybové hlášky | technické detaily zůstávají v logu, ven jde česká hláška bez vnitřností serveru |
+
+---
+
 ## Technické poznámky
 
 ### Architektura
@@ -252,7 +289,8 @@ src/
 │  └─ game/                          odpočet, graf hlasů, žebříček, pódium
 ├─ hooks/                            Realtime a odpočet
 ├─ lib/                              typy, bodování, Supabase klienti
-└─ server/                           dotazy, fáze hry, validace
+├─ server/                           dotazy, fáze hry, validace
+└─ test/                             pamětová atrapa Supabase pro testy
 supabase/
 ├─ migrations/0001_init.sql          schéma, triggery, RLS, Realtime
 └─ seed.sql                          kvíz o Josefovi (20 otázek)
@@ -279,4 +317,8 @@ pro doplnění dalších.
 | *„Chybí proměnná prostředí ADMIN_PASSWORD“* | Doplň ji do `.env.local`, resp. do nastavení Vercelu. |
 | Jména hráčů nenaskakují živě | V Supabase → **Database → Replication** ověř, že publikace `supabase_realtime` obsahuje tabulky `game_sessions` a `players`. Migrace je tam přidává automaticky. |
 | *„Tuhle přezdívku už někdo používá“* | Přezdívky musí být v rámci jedné hry unikátní – stačí zvolit jinou. |
+| *„Identifikátor … má neplatný formát“* | V adrese je poškozené id. Vrať se na `/admin` a otevři kvíz nebo hru znovu. |
+| *„Odeslaná data jsou příliš velká“* | Zkrať text otázky nebo možností – limit těla požadavku je 64 kB. |
+| *„Možnost … je v otázce dvakrát“* | Dvě možnosti mají stejný text. Hlasy by pak nešly rozlišit, uprav jednu z nich. |
+| Moderátora to vyhodilo na přihlášení | Přihlášení platí 12 hodin. Zadej heslo znovu, rozehraná hra zůstává i s body. |
 | Hra zamrzla na jedné otázce | Obnov stránku panelu moderátora. Po vypršení limitu se otázka uzavře sama. |

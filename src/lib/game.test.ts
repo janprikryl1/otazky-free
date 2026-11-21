@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   BASE_POINTS,
-  MAX_SPEED_BONUS,
   buildLeaderboard,
   calculatePoints,
   countVotes,
   generatePin,
   isValidPin,
+  MAX_SPEED_BONUS,
   normalizeNickname,
 } from "@/lib/game";
 import type { PlayerRow } from "@/lib/types";

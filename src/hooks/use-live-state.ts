@@ -17,7 +17,7 @@ type Options = {
    * volající zpracoval sám a do stavu se nepropíše (třeba vypršené
    * přihlášení moderátora, kde stačí znovu vykreslit stránku).
    */
-  onError?: (error: unknown) => boolean | void;
+  onError?: (error: unknown) => boolean | undefined;
 };
 
 /**

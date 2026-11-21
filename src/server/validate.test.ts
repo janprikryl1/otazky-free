@@ -28,7 +28,9 @@ describe("parseUuid", () => {
   });
 
   it("odmítne neplatný identifikátor s českou hláškou", () => {
-    const error = caught(() => parseUuid("../../etc/passwd", "Identifikátor kvízu"));
+    const error = caught(() =>
+      parseUuid("../../etc/passwd", "Identifikátor kvízu"),
+    );
     expect(error.status).toBe(400);
     expect(error.message).toBe("Identifikátor kvízu má neplatný formát.");
   });
@@ -120,17 +122,18 @@ describe("parseQuestionPayload", () => {
   });
 
   it("odmítne neceločíselné označení správné odpovědi", () => {
-    expect(() =>
-      parseQuestionPayload({ ...valid, correctIndex: 1.5 }),
-    ).toThrow(ApiError);
-    expect(() =>
-      parseQuestionPayload({ ...valid, correctIndex: "2" }),
-    ).toThrow(ApiError);
+    expect(() => parseQuestionPayload({ ...valid, correctIndex: 1.5 })).toThrow(
+      ApiError,
+    );
+    expect(() => parseQuestionPayload({ ...valid, correctIndex: "2" })).toThrow(
+      ApiError,
+    );
   });
 
   it("vyžaduje dvě až čtyři možnosti", () => {
     expect(
-      caught(() => parseQuestionPayload({ ...valid, options: ["Ano"] })).message,
+      caught(() => parseQuestionPayload({ ...valid, options: ["Ano"] }))
+        .message,
     ).toContain("alespoň 2");
 
     expect(
@@ -143,9 +146,9 @@ describe("parseQuestionPayload", () => {
       ).message,
     ).toContain("nejvýš 4");
 
-    expect(() =>
-      parseQuestionPayload({ ...valid, options: "ano,ne" }),
-    ).toThrow(ApiError);
+    expect(() => parseQuestionPayload({ ...valid, options: "ano,ne" })).toThrow(
+      ApiError,
+    );
   });
 
   it("odmítne dvě stejné možnosti", () => {

@@ -3,7 +3,7 @@ import { connection, type NextRequest } from "next/server";
 import { ApiError, withApi } from "@/lib/api";
 import { isValidPin } from "@/lib/game";
 
-import { getSessionById, getSessionByPin } from "@/server/queries";
+import { getSessionByPin } from "@/server/queries";
 import { buildPlayerState } from "@/server/state";
 import { parseUuid } from "@/server/validate";
 
@@ -23,16 +23,20 @@ export async function GET(request: NextRequest) {
         ? null
         : parseUuid(rawPlayerId, "Identifikátor hráče");
 
-    const session =
-      rawSessionId !== null
-        ? await getSessionById(parseUuid(rawSessionId, "Identifikátor hry"))
-        : isValidPin(pin)
-          ? await getSessionByPin(pin)
-          : null;
-
-    if (!session) {
-      throw new ApiError("Chybí PIN nebo identifikátor hry.", 400);
+    if (rawSessionId !== null) {
+      const sessionId = parseUuid(rawSessionId, "Identifikátor hry");
+      return buildPlayerState(sessionId, playerId);
     }
+
+    if (pin === null) {
+      throw new ApiError("Chybí PIN hry.", 400);
+    }
+
+    if (!isValidPin(pin)) {
+      throw new ApiError("PIN hry musí mít šest číslic.", 400);
+    }
+
+    const session = await getSessionByPin(pin);
 
     return buildPlayerState(session.id, playerId);
   });

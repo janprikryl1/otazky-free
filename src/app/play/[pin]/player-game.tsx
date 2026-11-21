@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCountdown } from "@/hooks/use-countdown";
 import { useLiveState } from "@/hooks/use-live-state";
 import { apiSend, errorMessage } from "@/lib/fetcher";
-import { ANSWER_STYLES } from "@/lib/game";
+import { ANSWER_STYLES, isValidPin } from "@/lib/game";
 import {
   clearStoredPlayer,
   loadStoredPlayer,
@@ -38,6 +38,9 @@ export function PlayerGame({ pin }: { pin: string }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Nesmyslný PIN v adrese řešíme rovnou, bez zbytečného dotazu na server.
+  const hasValidPin = isValidPin(pin);
+
   // obnova relace po F5 nebo uspání telefonu
   useEffect(() => {
     setPlayer(loadStoredPlayer(pin));
@@ -45,10 +48,12 @@ export function PlayerGame({ pin }: { pin: string }) {
   }, [pin]);
 
   const stateUrl = useMemo(() => {
+    if (!hasValidPin) return null;
+
     const params = new URLSearchParams({ pin });
     if (player) params.set("playerId", player.playerId);
     return `/api/game/state?${params.toString()}`;
-  }, [pin, player]);
+  }, [pin, player, hasValidPin]);
 
   // Realtime se dá odebírat až od chvíle, kdy známe id relace. Před
   // připojením ho zjistíme z prvního načtení stavu podle PINu.
@@ -82,6 +87,17 @@ export function PlayerGame({ pin }: { pin: string }) {
       setNotice("Tvoje místo ve hře jsme nenašli – přihlas se prosím znovu.");
     }
   }, [data, player, pin]);
+
+  if (!hasValidPin) {
+    return (
+      <div className="flex flex-1 flex-col justify-center gap-4">
+        <ErrorNote message="Tenhle odkaz nevede do žádné hry – PIN má mít šest číslic." />
+        <Button asChild size="lg">
+          <Link href="/">Zadat PIN hry</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (!isHydrated || (isLoading && !data)) {
     return <Spinner label="Načítám hru…" />;
