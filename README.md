@@ -1,341 +1,312 @@
-# 🎉 Narozeninový kvíz
+# Otázky Free – Live Interactive Quiz Platform
 
-Živý kvíz ve stylu Kahootu pro desítky hostů najednou. Moderátor promítá hru na
-televizi nebo projektor, hosté se připojí mobilem přes QR kód nebo PIN a soutěží
-o první místo.
+[![Next.js](https://img.shields.io/badge/Next.js-16_App_Router-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_%2B_Realtime-3ecf8e?logo=supabase)](https://supabase.com/)
+[![Vitest](https://img.shields.io/badge/Tested_with-Vitest-729b1b?logo=vitest)](https://vitest.dev/)
+[![Biome](https://img.shields.io/badge/Linter-Biome-60a5fa?logo=biome)](https://biomejs.dev/)
 
-Postaveno na **Next.js 16 (App Router)**, **TypeScriptu**, **Tailwindu v4**,
-komponentách ve stylu **shadcn/ui** a **Supabase** (PostgreSQL + Realtime).
-Aplikace je bezstavová – běží na **Vercelu** bez vlastního Node.js serveru.
+A modern, high-performance, real-time multiplayer quiz platform built for parties, team events, conferences, and classrooms. Inspired by Kahoot, it allows a host to project a live game session onto a large display or projector while participants join effortlessly from mobile devices using a 6-digit PIN or QR code.
 
----
-
-## Obsah
-
-1. [Jak to funguje](#jak-to-funguje)
-2. [Krok 1 – Založení Supabase projektu](#krok-1--založení-supabase-projektu)
-3. [Krok 2 – Vytvoření databáze](#krok-2--vytvoření-databáze)
-4. [Krok 3 – Naplnění kvízu o Josefovi](#krok-3--naplnění-kvízu-o-josefovi)
-5. [Krok 4 – Proměnné prostředí](#krok-4--proměnné-prostředí)
-6. [Krok 5 – Spuštění lokálně](#krok-5--spuštění-lokálně)
-7. [Krok 6 – Nasazení na Vercel](#krok-6--nasazení-na-vercel)
-8. [Jak hru odmoderovat](#jak-hru-odmoderovat)
-9. [Bodování](#bodování)
-10. [Testy](#testy)
-11. [Technické poznámky](#technické-poznámky)
-12. [Řešení problémů](#řešení-problémů)
+The application is completely stateless, serverless, and optimized for zero-maintenance deployments on **Vercel** with **Supabase (PostgreSQL + Realtime)** as the real-time data layer.
 
 ---
 
-## Jak to funguje
+## 🌟 Key Features
 
-| Obrazovka | Adresa | K čemu slouží |
-| --- | --- | --- |
-| Přihlášení hráče | `/` | Hráč zadá PIN hry |
-| Hráčská hra | `/play/[pin]` | Přezdívka, odpovídání, vyhodnocení, výsledky |
-| Moderátorská část | `/admin` | Přehled kvízů, editor otázek |
-| Editor kvízu | `/admin/quizzes/[quizId]` | Přidání, úprava, mazání a přeřazení otázek |
-| Ovládací panel živé hry | `/admin/play/[sessionId]` | QR kód, PIN, odpočet, vyhodnocení, pódium |
+### 🖥️ Host & Presentation Dashboard
+- **Big-Screen Projector View**: Dedicated live stage optimized for TVs, projectors, and large displays.
+- **Dynamic Join Screen**: Automatically renders a high-contrast QR code and 6-digit game PIN with real-time participant roster updates as players join.
+- **Host Live Controls**: Pacing controls to advance questions, countdown monitors, live submission counters (*e.g., "18 / 24 players answered"*), and manual early question closure.
+- **Real-Time Visualizations**: Interactive response breakdown bar charts and dynamic leaderboards between rounds.
+- **Winner Podium**: Olympic-style animated podium celebration (1st, 2nd, and 3rd place) with celebratory confetti canvas animations.
 
-Hra má čtyři fáze, které se **okamžitě** propisují na všechna zařízení přes
-Supabase Realtime:
+### 📱 Mobile-First Player Experience
+- **Zero Friction Onboarding**: Instant entry via mobile browser—no downloads, account registrations, or app installations required.
+- **Synchronized Live State**: Question options, color-coded tactile buttons, synchronized countdown timers, and immediate answer confirmations.
+- **Instant Result Cards**: Clear visual feedback (correct/incorrect status, current rank, and points earned) revealed synchronously across all devices.
+- **Sleep & Disconnect Resilience**: Player sessions and credentials persist in `localStorage`, enabling seamless recovery upon page reload, screen wake, or transient network interruptions.
 
-1. **Čekárna** – velký QR kód a PIN, jména hráčů naskakují živě.
-2. **Otázka** – odpočet času a počítadlo „Odpovědělo: 14 / 22 hráčů“.
-3. **Vyhodnocení** – správná odpověď, sloupcový graf hlasů a průběžná tabulka.
-   Hráč zároveň na telefonu vidí zelenou nebo červenou kartu a získané body.
-4. **Vyhlášení** – pódium pro 1.–3. místo s konfetami a kompletní žebříček.
+### 🛡️ Enterprise Security & Anti-Cheat Architecture
+- **Server-Authoritative Evaluation**: Game state transitions, timer enforcement, and score calculations are executed exclusively on server route handlers.
+- **Zero Answer Leakage**: Quiz questions and choices are streamed to players without the `correct_index` payload until the question officially closes and enters the reveal phase.
+- **Row-Level Security (RLS)**: Public clients operate strictly under anonymous permissions, restricted from directly reading questions or answer keys from PostgreSQL.
+- **Input Sanitization & Protection**: Strict UUID validation, payload size caps (64 KB limit), uniqueness constraints on player nicknames per session, and timing leeway against network jitter.
 
----
-
-## Krok 1 – Založení Supabase projektu
-
-1. Jdi na [supabase.com](https://supabase.com) a přihlas se (stačí free tarif).
-2. Klikni na **New project** a vyplň formulář:
-
-   | Políčko | Co nastavit |
-   | --- | --- |
-   | **Organization** | tvoje organizace (free tarif stačí) |
-   | **GitHub (optional)** | nech **nepřipojené** – schéma pouštíme ručně v SQL editoru, integrace by chtěla navíc `supabase/config.toml` a CLI projekt |
-   | **Project name** | třeba `narozeninovy-kviz` |
-   | **Database password** | vygeneruj silné a ulož do správce hesel (aplikace ho nepotřebuje, hodí se jen pro přímý přístup k Postgresu) |
-   | **Region** | **Central EU (Frankfurt)** kvůli nízké odezvě z Česka |
-   | **Enable Data API** | ✅ **zapnuto** – bez něj se aplikace k databázi vůbec nedostane |
-   | **Grant API access to new tables automatically** | ✅ zapni; migrace si práva nastavuje i sama, takže projde i bez toho |
-   | **Enable RLS on new tables automatically** | ✅ zapni – bezpečnější výchozí stav, migrace RLS stejně zapíná u všech tabulek |
-
-3. Počkej 1–2 minuty, než se projekt vytvoří.
+### 📝 Quiz Management Suite
+- **Interactive Quiz Builder**: Web-based administration interface (`/admin`) for creating, editing, and managing quizzes.
+- **Configurable Questions**: Support for 2 to 4 multiple-choice options, custom question text, and per-question timers (5 to 300 seconds).
+- **Validation Guard**: Prevents launching sessions with missing answer keys or duplicate answer choices.
 
 ---
 
-## Krok 2 – Vytvoření databáze
+## 🏗️ Architecture & Data Flow
 
-1. V Supabase otevři vlevo **SQL Editor** → **New query**.
-2. Zkopíruj celý obsah souboru
-   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-   a vlož ho do editoru.
-3. Klikni na **Run**. Skript vytvoří tabulky `quizzes`, `questions`,
-   `game_sessions`, `players` a `answers`, nastaví Row Level Security
-   a zapne Realtime.
-
-> Skript je možné spustit opakovaně – nic nepřepíše.
-
----
-
-## Krok 3 – Naplnění kvízu o Josefovi
-
-1. Znovu **SQL Editor** → **New query**.
-2. Vlož obsah souboru [`supabase/seed.sql`](supabase/seed.sql) a spusť ho.
-3. Do databáze se vloží kvíz **„Velký kvíz o Josefovi“** s 20 otázkami.
-
-U otázek, kde zadání neurčilo správnou odpověď, zůstane `correct_index`
-prázdný. Výpis takových otázek skript vypíše na konci. **Správné odpovědi
-doplň v administraci** (`/admin` → *Upravit*) – dokud nejsou vyplněné u všech
-otázek, hra se nedá spustit a aplikace ti napíše, které otázky chybí.
-
----
-
-## Krok 4 – Proměnné prostředí
-
-V Supabase otevři **Project Settings → API** a zkopíruj si tři hodnoty.
-Pak v projektu vytvoř soubor `.env.local`:
-
-```powershell
-Copy-Item .env.example .env.local
+```
+┌─────────────────────────────────┐       ┌─────────────────────────────────┐
+│     Player Mobile Device        │       │       Host Display / TV         │
+│  (Next.js Client / Touch UI)    │       │     (Next.js Host Dashboard)    │
+└────────────────┬────────────────┘       └────────────────┬────────────────┘
+                 │                                         │
+                 │   HTTP Actions (Join, Answer, Poll)     │   Admin Controls
+                 ▼                                         ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                 Next.js 16 App Router (Serverless / Vercel)               │
+│                                                                           │
+│   • Server Route Handlers (/api/game/*, /api/admin/*)                     │
+│   • Server-Authoritative Game Loop & Speed Scoring Logic                  │
+│   • Password-Protected Admin Auth & Secure Cookie Session                 │
+└─────────────────────────────────────┬─────────────────────────────────────┘
+                                      │
+               Internal API           │ SUPABASE_SERVICE_ROLE_KEY
+             (Privileged Data)        ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                           Supabase Platform                               │
+│                                                                           │
+│   ┌────────────────────────────────┐    ┌─────────────────────────────┐   │
+│   │     PostgreSQL Database        │    │      Supabase Realtime      │   │
+│   │  • quizzes, questions          │◄───┤    (WebSocket broadcast)    │   │
+│   │  • game_sessions, players      │    │  • Session status change    │   │
+│   │  • answers, RLS Policies       │    │  • Player roster updates    │   │
+│   └────────────────────────────────┘    └─────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
-A vyplň ho:
-
-| Proměnná | Kde ji vzít | Poznámka |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → *Project URL* | např. `https://abcdefgh.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → *anon public* (nebo *Publishable key*) | veřejný klíč, jde do prohlížeče |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → *service_role* (nebo *Secret key*) | **tajný!** jen na serveru |
-| `ADMIN_PASSWORD` | vymyslíš sám | heslo do `/admin` |
-
-> **Nové projekty mají klíče jinak pojmenované.** Supabase přešel z dvojice
-> `anon` / `service_role` (dlouhé JWT začínající `eyJ…`) na
-> *Publishable key* (`sb_publishable_…`) a *Secret key* (`sb_secret_…`).
-> Aplikace funguje s obojím – důležité je, že do `NEXT_PUBLIC_…` patří ten
-> veřejný a do `SUPABASE_SERVICE_ROLE_KEY` ten tajný.
-
-> **Proč i `service_role` klíč?**
-> Zadání počítalo jen se třemi proměnnými, ale s pouhým `anon` klíčem by si
-> kdokoli z hostů mohl v prohlížeči stáhnout tabulku otázek **včetně správných
-> odpovědí**. Proto otázky čte výhradně server pomocí `service_role` klíče
-> a telefony hráčů dostanou jen text otázky a možnosti. Správná odpověď se
-> k hráči dostane až ve fázi vyhodnocení.
->
-> Klíč `service_role` nikdy nedávej do proměnné s prefixem `NEXT_PUBLIC_`
-> a necommituj ho – soubor `.env.local` je v `.gitignore`.
+### Real-Time & Fallback Strategy
+1. **Primary Transport**: Supabase Realtime broadcasts table row changes (`game_sessions`, `players`) via WebSockets to connected browsers.
+2. **Metadata Protection**: Clients never receive raw answer tables directly through Realtime. Instead, Realtime signals state changes, prompting clients to fetch sanitized state from `/api/game/...`.
+3. **Automatic Fallback Polling**: If WebSocket connectivity drops or is blocked by restrictive corporate/venue networks, automatic background polling engages (6-second intervals for players, 4-second intervals for the host).
+4. **Dead-Host Fail-Safe**: If a host machine goes to sleep or disconnects during an active question, the server automatically resolves and closes the question once its expiration deadline passes.
 
 ---
 
-## Krok 5 – Spuštění lokálně
+## 🔄 Game Lifecycle
 
-```powershell
+```mermaid
+stateDiagram-v2
+    [*] --> Lobby: Host launches session (Generates 6-digit PIN & QR)
+    Lobby --> Question: Host clicks "Start Quiz"
+    
+    state Question {
+        [*] --> ActiveQuestion: Display question text & options
+        ActiveQuestion --> Countdown: Real-time countdown (5-300s)
+        Countdown --> AutoClose: Time expires
+        ActiveQuestion --> EarlyClose: Host ends early / All answered
+    }
+
+    Question --> Reveal: Server calculates scores & answers
+    
+    state Reveal {
+        [*] --> ShowCorrect: Reveal answer & vote distribution chart
+        ShowCorrect --> Leaderboard: Display round standings
+    }
+
+    Reveal --> Question: Host clicks "Next Question"
+    Reveal --> Finished: Last question completed
+    
+    state Finished {
+        [*] --> Podium: Animated 1st, 2nd, 3rd place podium
+        Podium --> FinalRanks: Complete final scoreboard
+    }
+
+    Finished --> [*]
+```
+
+---
+
+## ⚡ Scoring Engine
+
+The scoring system rewards both **accuracy** and **speed**, calculated deterministically on the server:
+
+| Condition | Points Awarded |
+| :--- | :--- |
+| **Incorrect Answer** | `0` points |
+| **No Answer / Time Out** | `0` points |
+| **Correct Answer (Base)** | `500` points |
+| **Speed Bonus** | Up to `+500` points based on remaining time fraction |
+| **Total Possible per Question** | **~1,000 points** |
+
+$$\text{Points} = \text{round}\left(500 + 500 \times \max\left(0, \frac{\text{Time Remaining}}{\text{Total Question Time Limit}}\right)\right)$$
+
+> **Security Note**: Scores are awarded only when the question reaches the `reveal` stage. Scores remain hidden during the active question phase so players cannot infer correctness before the round finishes. In the event of a point tie, earlier game join timestamp breaks the tie.
+
+---
+
+## 🗄️ Database Schema & Row-Level Security (RLS)
+
+The database schema utilizes PostgreSQL with strict relational integrity, check constraints, and Row Level Security:
+
+### Table Overview
+
+| Table | Purpose | Public Access (`anon`) | Server Access (`service_role`) |
+| :--- | :--- | :---: | :---: |
+| `quizzes` | Quiz metadata and configurations | 🚫 Blocked | Full access |
+| `questions` | Question prompts, options, limits, and `correct_index` | 🚫 Blocked | Full access |
+| `game_sessions` | Active session state, current index, PIN, timer timestamps | Read-only | Full access |
+| `players` | Registered players, nicknames, session links, total scores | Read-only | Full access |
+| `answers` | Recorded player responses, timestamps, and awarded points | 🚫 Blocked | Full access |
+
+---
+
+## 🧰 Tech Stack
+
+- **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
+- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) with `@tailwindcss/turbopack`
+- **UI Components**: [Radix UI](https://www.radix-ui.com/) primitives styled following [shadcn/ui](https://ui.shadcn.com/) patterns
+- **Database & Realtime**: [Supabase](https://supabase.com/) (PostgreSQL, Realtime replication, RLS)
+- **Visuals & Effects**: `canvas-confetti`, `lucide-react`, `qrcode.react`
+- **Testing**: [Vitest](https://vitest.dev/) with comprehensive in-memory database simulation
+- **Code Quality**: [Biome](https://biomejs.dev/) (fast formatting and linting)
+
+---
+
+## 📂 Project Structure
+
+```
+otazky-free/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx                     # Player landing screen (PIN entry)
+│   │   ├── play/[pin]/                  # Mobile player gameplay interface
+│   │   ├── admin/
+│   │   │   ├── page.tsx                 # Host portal: quiz list & active games
+│   │   │   ├── quizzes/[quizId]/        # Quiz builder and question editor
+│   │   │   └── play/[sessionId]/        # Live host control stage & projector view
+│   │   └── api/
+│   │       ├── game/                    # Public player endpoints (join, answer, state)
+│   │       └── admin/                   # Privileged endpoints (auth, quiz CRUD, game loop)
+│   ├── components/
+│   │   ├── ui/                          # Radix / shadcn/ui design primitives
+│   │   └── game/                        # Timer dials, vote charts, leaderboards, podium
+│   ├── hooks/                           # Realtime subscriptions and countdown timers
+│   ├── lib/                             # Shared utilities, scoring formulas, Supabase clients
+│   ├── server/                          # Server-side business logic, validation, queries
+│   └── test/                            # In-memory mock database & schema tests
+├── supabase/
+│   ├── migrations/
+│   │   └── 0001_init.sql                # Production database schema, RLS, & triggers
+│   └── seed.sql                         # Demo quiz dataset
+├── biome.json                           # Linter and formatter configuration
+├── components.json                      # shadcn/ui configuration
+├── next.config.ts                       # Next.js configuration
+├── package.json                         # Project dependencies and run scripts
+├── tsconfig.json                        # TypeScript configuration
+└── vitest.config.mts                    # Vitest test suite configuration
+```
+
+---
+
+## ⚙️ Environment Variables
+
+Create a `.env.local` file in the project root based on `.env.example`:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable | Scope | Description |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Public / Browser | Supabase project URL (`https://<project-id>.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public / Browser | Supabase anonymous public key (used for Realtime events) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server Only | **Confidential.** Supabase service role key for privileged queries |
+| `ADMIN_PASSWORD` | Server Only | Master secret password used to authenticate to `/admin` |
+
+> ⚠️ **Security Warning**: Never prefix `SUPABASE_SERVICE_ROLE_KEY` with `NEXT_PUBLIC_` or commit it to version control. It bypasses PostgreSQL Row-Level Security and is strictly intended for server-side route execution.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Node.js**: `20.x` or later
+- **Package Manager**: `pnpm` (version 9 or 10 recommended)
+- **Supabase Account**: A free Supabase project with PostgreSQL and Realtime enabled
+
+### 1. Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/your-username/otazky-free.git
+cd otazky-free
 pnpm install
 ```
 
-```powershell
+### 2. Database Setup
+
+1. In your Supabase dashboard, navigate to **SQL Editor** → **New Query**.
+2. Run the initialization script from [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql). This configures the schema, check constraints, RLS policies, indexes, and Realtime publications.
+3. *(Optional)* Run [`supabase/seed.sql`](supabase/seed.sql) to populate a ready-to-play sample quiz.
+
+### 3. Environment Configuration
+
+Populate `.env.local` with your Supabase credentials and an admin password:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+ADMIN_PASSWORD=your-secure-admin-password
+```
+
+### 4. Running the Development Server
+
+Start the local Next.js development server:
+
+```bash
 pnpm dev
 ```
 
-Otevři [http://localhost:3000](http://localhost:3000). Moderátorská část je na
-[http://localhost:3000/admin](http://localhost:3000/admin).
+- **Player Interface**: Open [http://localhost:3000](http://localhost:3000)
+- **Admin & Host Stage**: Open [http://localhost:3000/admin](http://localhost:3000/admin)
 
-Chceš-li si hru vyzkoušet z telefonu ve stejné Wi-Fi, použij síťovou adresu,
-kterou `pnpm dev` vypíše (např. `http://10.0.0.90:3000`) – QR kód se vygeneruje
-podle adresy, ze které je otevřený ovládací panel.
-
-Další příkazy:
-
-```powershell
-pnpm build
-```
-
-```powershell
-pnpm lint
-```
-
-```powershell
-pnpm test
-```
+> 💡 **Tip for Local Mobile Testing**: When running locally, connect your mobile device to the same local Wi-Fi and open the host dashboard using your LAN IP (e.g. `http://192.168.1.50:3000/admin`). The dynamic QR code will automatically encode your network address for mobile scanning.
 
 ---
 
-## Krok 6 – Nasazení na Vercel
+## 🧪 Testing & Code Quality
 
-1. Nahraj projekt na GitHub.
-2. Na [vercel.com](https://vercel.com) klikni **Add New → Project** a vyber
-   repozitář. Framework **Next.js** se detekuje sám, nic nenastavuj.
-3. V sekci **Environment Variables** přidej všechny čtyři proměnné z kroku 4
-   (pro prostředí *Production*, *Preview* i *Development*):
+The project features a high-coverage unit and integration test suite utilizing [Vitest](https://vitest.dev/). Tests execute without any external database dependencies by leveraging an in-memory SQL simulator that enforces table constraints, unique keys, and triggers.
 
+```bash
+# Run test suite once
+pnpm test
+
+# Run tests in interactive watch mode
+pnpm test:watch
+
+# Run code linter
+pnpm lint
+
+# Format codebase
+pnpm format
+```
+
+### Test Suite Coverage
+- **Scoring Formulas**: Precision speed bonus, zero scores on invalid answers, network timestamp tolerance.
+- **Game State Machine**: Strict phase progression (`lobby` → `question` → `reveal` → `finished`).
+- **Answer Secrecy**: Verification that active question payloads never expose answer indexes.
+- **Race Condition Prevention**: Double-submission prevention, duplicate nickname handling, and payload boundary checks.
+- **API Guarding**: HTTP 401 unauthorized assertions on all privileged admin endpoints.
+
+---
+
+## 🚢 Production Deployment (Vercel)
+
+1. Push your repository to GitHub, GitLab, or Bitbucket.
+2. Import the project into [Vercel](https://vercel.com). The Next.js framework preset is detected automatically.
+3. Add the required environment variables in the Vercel project settings:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `ADMIN_PASSWORD`
-
-4. Klikni **Deploy**.
-5. Po nasazení otevři `https://tvoje-adresa.vercel.app/admin`, přihlas se
-   heslem a spusť hru.
-
-> Při změně proměnných na Vercelu je potřeba projekt **znovu nasadit**
-> (Deployments → … → Redeploy), jinak se nové hodnoty neprojeví.
+4. Click **Deploy**.
+5. Once deployed, navigate to `https://your-domain.vercel.app/admin`, log in, and launch your live session.
 
 ---
 
-## Jak hru odmoderovat
+## 📄 License
 
-1. Přihlas se na `/admin`.
-2. U kvízu klikni na **Spustit živou hru** – vytvoří se nová hra s PINem.
-3. Otevřený ovládací panel promítni na televizi nebo projektor.
-4. Hosté naskenují QR kód (nebo zadají PIN na úvodní stránce), napíšou
-   přezdívku a kliknou na **Vstoupit do hry**. Jejich jména ti naskáčou
-   do seznamu.
-5. Až jsou všichni, klikni na **Spustit kvíz**.
-6. Během otázky vidíš odpočet a kolik lidí už odpovědělo. Můžeš počkat na
-   vypršení času, nebo hlasování uzavřít tlačítkem **Ukončit otázku hned**.
-7. Po vyhodnocení pokračuj tlačítkem **Další otázka**. U poslední otázky se
-   tlačítko změní na **Vyhlásit výsledky**.
-8. Na závěr se zobrazí pódium s konfetami.
-
-**Dobré vědět:**
-
-- Zavřel jsi omylem okno moderátora? Na `/admin` najdeš sekci *Rozehrané hry*
-  a vrátíš se zpátky.
-- Hráči, kterému se uspal telefon nebo obnovil stránku, se hra sama vrátí
-  do aktuálního stavu i s dosavadními body (ukládá se do `localStorage`).
-- Kdyby moderátorovi spadla obrazovka uprostřed otázky, server otázku po
-  vypršení limitu uzavře sám, aby hráči nezůstali viset.
-- Tlačítko **Ukončit hru** v hlavičce panelu hru předčasně ukončí a rovnou
-  vyhlásí výsledky.
-
----
-
-## Bodování
-
-| Situace | Body |
-| --- | --- |
-| Správná odpověď | **500** základ |
-| Rychlostní bonus | až **+500** podle toho, kolik času zbývalo |
-| Špatná odpověď | 0 |
-| Žádná odpověď | 0 |
-
-Odpověď hned na začátku odpočtu tedy vynese skoro 1 000 bodů, odpověď
-na poslední chvíli přibližně 500. Body se připisují až ve chvíli, kdy se
-otázka uzavře – hráč si tak z vlastního skóre nemůže dopředu odvodit,
-jestli odpověděl správně.
-
----
-
-## Testy
-
-Herní logika a všechny API endpointy mají automatické testy (Vitest).
-Spustí se bez Supabase – databáze je v testech nahrazená věrnou pamětovou
-atrapou, která hlídá i unikátní indexy a triggery z migrace.
-
-```powershell
-pnpm test
-```
-
-```powershell
-pnpm test:watch
-```
-
-Co je pokryté:
-
-| Oblast | Co se ověřuje |
-| --- | --- |
-| Bodování | základ i rychlostní bonus, nula za špatnou odpověď, odolnost proti rozcházejícím se hodinám |
-| Žebříček | řazení, shodné pořadí při rovnosti bodů, přednost dřívějšího příchodu |
-| Průběh hry | čekárna → otázka → vyhodnocení → vyhlášení, limity jednotlivých otázek, předčasné ukončení |
-| Připisování bodů | body až při vyhodnocení, žádné dvojí připsání ani při opakovaném či souběžném kliknutí |
-| Připojení hráče | očista přezdívky, unikátnost v rámci hry, odmítnutí dohrané hry |
-| Odpovídání | jedna odpověď na otázku, uzavření po čase, tolerance zpoždění sítě, možnost mimo rozsah |
-| Utajení odpovědí | odpověď serveru hráči během otázky neobsahuje správnou možnost ani nepřímo |
-| Přihlášení | heslo se neukládá do cookie v čitelné podobě, padělaná cookie neprojde |
-| Ochrana API | všech 13 admin endpointů vrací bez přihlášení 401 a data nechá beze změny |
-| Vstupy | neplatná UUID, nečitelné JSON, příliš velké tělo, duplicitní možnosti, rozsah časového limitu |
-| Chybové hlášky | technické detaily zůstávají v logu, ven jde česká hláška bez vnitřností serveru |
-
----
-
-## Technické poznámky
-
-### Architektura
-
-```
-Telefon hráče ──┐                        ┌── Supabase PostgreSQL
-                ├── Next.js (Vercel) ────┤
-Panel moderátora┘      route handlery    └── Supabase Realtime
-```
-
-- **Veškerá herní logika běží na serveru** v route handlerech pod `/api`.
-  Prohlížeč nikdy nepočítá body ani nerozhoduje o fázi hry.
-- **Supabase Realtime** přenáší jen změny řádku hry (`game_sessions`) a seznam
-  hráčů (`players`). Jakmile klient dostane signál, dotáhne si detail přes
-  `/api`. Díky tomu se k hráčům nikdy nedostanou správné odpovědi.
-- Jako pojistka proti výpadku WebSocketu běží záložní dotazování
-  (hráči po 6 s, moderátor po 4 s) a obnova při probuzení telefonu.
-- Žádný vlastní Socket.io server – vše je serverless, tedy kompatibilní
-  s Vercelem.
-
-### Row Level Security
-
-| Tabulka | Veřejné čtení (anon klíč) |
-| --- | --- |
-| `game_sessions` | ✅ stav hry (neobsahuje nic tajného) |
-| `players` | ✅ přezdívky a skóre |
-| `quizzes`, `questions`, `answers` | ❌ pouze server přes `service_role` |
-
-### Struktura projektu
-
-```
-src/
-├─ app/
-│  ├─ page.tsx                       úvodní stránka s PINem
-│  ├─ play/[pin]/                    hráčské rozhraní
-│  ├─ admin/                         moderátorská část
-│  │  ├─ quizzes/[quizId]/           editor kvízu
-│  │  └─ play/[sessionId]/           ovládací panel živé hry
-│  └─ api/                           route handlery (herní logika)
-├─ components/
-│  ├─ ui/                            komponenty ve stylu shadcn/ui
-│  └─ game/                          odpočet, graf hlasů, žebříček, pódium
-├─ hooks/                            Realtime a odpočet
-├─ lib/                              typy, bodování, Supabase klienti
-├─ server/                           dotazy, fáze hry, validace
-└─ test/                             pamětová atrapa Supabase pro testy
-supabase/
-├─ migrations/0001_init.sql          schéma, triggery, RLS, Realtime
-└─ seed.sql                          kvíz o Josefovi (20 otázek)
-```
-
-### Komponenty shadcn/ui
-
-Projekt používá Tailwind v4 bez PostCSS (`@tailwindcss/turbopack`), kde CLI
-`shadcn` zatím neumí inicializaci. Komponenty v `src/components/ui/` proto
-vznikly ručně, ale drží se konvencí shadcn/ui (`new-york`, Radix primitiva,
-`cva`, helper `cn`, `data-slot` atributy) a soubor `components.json` je
-připravený, takže `pnpm dlx shadcn@latest add <komponenta>` lze použít
-pro doplnění dalších.
-
----
-
-## Řešení problémů
-
-| Hláška / problém | Co s tím |
-| --- | --- |
-| *„Nepodařilo se spojit s databází Supabase“* | Chybí nebo je špatně `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`. Po změně `.env.local` restartuj `pnpm dev`, na Vercelu projekt znovu nasaď. |
-| *„V databázi chybí tabulky kvízu“* | Nebyl spuštěn `supabase/migrations/0001_init.sql`. |
-| *„U těchto otázek není označená správná odpověď“* | Otevři editor kvízu a u vypsaných otázek zaškrtni správnou možnost. |
-| *„Chybí proměnná prostředí ADMIN_PASSWORD“* | Doplň ji do `.env.local`, resp. do nastavení Vercelu. |
-| Jména hráčů nenaskakují živě | V Supabase → **Database → Publications** otevři publikaci `supabase_realtime` a ověř, že obsahuje tabulky `game_sessions` a `players`. Migrace je tam přidává automaticky. |
-| *„Tuhle přezdívku už někdo používá“* | Přezdívky musí být v rámci jedné hry unikátní – stačí zvolit jinou. |
-| *„Identifikátor … má neplatný formát“* | V adrese je poškozené id. Vrať se na `/admin` a otevři kvíz nebo hru znovu. |
-| *„Odeslaná data jsou příliš velká“* | Zkrať text otázky nebo možností – limit těla požadavku je 64 kB. |
-| *„Možnost … je v otázce dvakrát“* | Dvě možnosti mají stejný text. Hlasy by pak nešly rozlišit, uprav jednu z nich. |
-| Moderátora to vyhodilo na přihlášení | Přihlášení platí 12 hodin. Zadej heslo znovu, rozehraná hra zůstává i s body. |
-| Hra zamrzla na jedné otázce | Obnov stránku panelu moderátora. Po vypršení limitu se otázka uzavře sama. |
+This project is open-source and available under the [MIT License](LICENSE).
