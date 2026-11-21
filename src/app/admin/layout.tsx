@@ -1,15 +1,13 @@
-import { PartyPopperIcon } from "lucide-react";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
-import { LogoutButton } from "./logout-button";
+import { AdminMenu } from "./admin-menu";
 
-/** Odhlašovací tlačítko dává smysl jen přihlášenému moderátorovi. */
-async function LogoutSlot() {
+/** Nabídka dává smysl jen přihlášenému moderátorovi. */
+async function AdminMenuSlot() {
   if (!(await isAdminAuthenticated())) return null;
-  return <LogoutButton />;
+  return <AdminMenu />;
 }
 
 export const metadata = {
@@ -19,23 +17,20 @@ export const metadata = {
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="sticky top-0 z-30 border-white/10 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <Link
-            href="/admin"
-            className="flex min-w-0 items-center gap-2 font-bold"
-          >
-            <PartyPopperIcon className="size-5 shrink-0 text-primary" />
-            <span className="truncate">Narozeninový kvíz</span>
-          </Link>
+      {/*
+        Nabídka je plovoucí, ne v pruhu nad obsahem – živá hra se promítá
+        a vodorovný pruh by zbytečně ukrajoval plochu otázce. Stránky si
+        proto uvolňují levý horní roh samy (třída `pl-12` na prvním řádku)
+        a přes `useAdminMenuActions` si do nabídky přidávají vlastní akce.
 
-          <Suspense fallback={null}>
-            <LogoutSlot />
-          </Suspense>
-        </div>
-      </header>
+        Layout zůstává čistě serverový: klientská komponenta kolem
+        `children` by rozbila doručování odložených hranic uvnitř stránek.
+      */}
+      <Suspense fallback={null}>
+        <AdminMenuSlot />
+      </Suspense>
 
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-5">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-4">
         {children}
       </div>
     </div>

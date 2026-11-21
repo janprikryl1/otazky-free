@@ -161,7 +161,8 @@ function PlayerScreens({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <header className="flex items-center justify-between gap-3">
+      {/* pr-12 uvolňuje místo plovoucímu přepínači motivu */}
+      <header className="flex items-center justify-between gap-3 pr-12">
         <div className="min-w-0">
           <p className="truncate font-bold text-lg leading-tight">
             {me?.nickname}
@@ -317,7 +318,7 @@ function QuestionView({
           Odpověď odeslána, čekáme na ostatní…
         </div>
       ) : isOver ? (
-        <div className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-center font-bold text-muted-foreground">
+        <div className="flex items-center justify-center gap-3 rounded-xl border border-hairline bg-raised px-4 py-4 text-center font-bold text-muted-foreground">
           <HourglassIcon className="size-5 shrink-0" />
           Čas vypršel – tuhle otázku jsi nestihl.
         </div>

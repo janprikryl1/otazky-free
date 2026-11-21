@@ -43,7 +43,7 @@ export function Leaderboard({
               "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
               isMe
                 ? "border-primary/60 bg-primary/15"
-                : "border-white/10 bg-white/5",
+                : "border-hairline bg-raised",
             )}
           >
             <span className="flex w-9 shrink-0 justify-center font-black text-lg tabular-nums">

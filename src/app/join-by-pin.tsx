@@ -70,7 +70,7 @@ export function JoinByPin() {
       {lastPin ? (
         <Link
           href={`/play/${lastPin}`}
-          className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-3 font-semibold text-sm transition-colors hover:bg-white/10"
+          className="flex items-center justify-center gap-2 rounded-lg border border-hairline bg-raised px-3 py-3 font-semibold text-sm transition-colors hover:bg-raised-strong"
         >
           <RotateCcwIcon className="size-4" />
           Zpátky do hry {lastPin}

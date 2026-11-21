@@ -119,7 +119,7 @@ export function QuizList() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 pl-12">
         <div>
           <h1 className="font-black text-3xl tracking-tight">Kvízy</h1>
           <p className="text-muted-foreground text-sm">
@@ -152,7 +152,7 @@ export function QuizList() {
               {liveSessions.map((session) => (
                 <li
                   key={session.id}
-                  className="flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
+                  className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline bg-sunken px-3 py-2.5"
                 >
                   <span className="font-mono font-black text-lg tracking-widest">
                     {session.pin}

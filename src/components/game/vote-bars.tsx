@@ -55,7 +55,7 @@ export function VoteBars({ options, counts, correctIndex }: Props) {
             <div
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-lg px-1 py-2 text-center",
-                isCorrect ? "bg-success/15" : "bg-white/5",
+                isCorrect ? "bg-success/15" : "bg-raised",
               )}
             >
               <span className="flex items-center gap-1 font-black text-base sm:text-lg">

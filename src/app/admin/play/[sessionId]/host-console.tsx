@@ -15,6 +15,11 @@ import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  type AdminMenuAction,
+  useAdminMenuActions,
+} from "@/app/admin/admin-menu";
+
 import { Confetti } from "@/components/game/confetti";
 import { CountdownRing } from "@/components/game/countdown-ring";
 import { Leaderboard } from "@/components/game/leaderboard";
@@ -112,6 +117,28 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
     [sessionId, refresh, setData, handleAuthError],
   );
 
+  const status = data?.session.status;
+  const canFinish = status !== undefined && status !== "finished";
+
+  const menuActions = useMemo<AdminMenuAction[]>(() => {
+    if (!canFinish) return [];
+
+    return [
+      {
+        label: "Ukončit hru",
+        icon: SquareIcon,
+        danger: true,
+        onSelect: () => {
+          if (window.confirm("Opravdu ukončit celou hru?")) {
+            void act("finish");
+          }
+        },
+      },
+    ];
+  }, [canFinish, act]);
+
+  useAdminMenuActions(menuActions);
+
   if (isLoading && !data) return <Spinner label="Načítám hru…" />;
 
   if (!data) {
@@ -132,7 +159,8 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      {/* pl-12 uvolňuje místo plovoucímu tlačítku nabídky */}
+      <header className="flex flex-wrap items-center justify-between gap-3 pl-12">
         <div className="min-w-0">
           <h1 className="truncate font-black text-2xl tracking-tight">
             {session.quizTitle}
@@ -146,35 +174,12 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
-            <UsersIcon />
-            {session.playerCount}
-          </Badge>
-
-          {session.status !== "finished" ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={isBusy}
-              onClick={() => {
-                if (window.confirm("Opravdu ukončit celou hru?")) {
-                  void act("finish");
-                }
-              }}
-            >
-              <SquareIcon />
-              Ukončit hru
-            </Button>
-          ) : (
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/admin">
-                <HomeIcon />
-                Na kvízy
-              </Link>
-            </Button>
-          )}
-        </div>
+        {/* „Ukončit hru“ i odkaz na kvízy žijí v plovoucí nabídce,
+            ať na promítané obrazovce nepřekáží ovládací prvky. */}
+        <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
+          <UsersIcon />
+          {session.playerCount}
+        </Badge>
       </header>
 
       {actionError ? <ErrorNote message={actionError} /> : null}

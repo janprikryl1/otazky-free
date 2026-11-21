@@ -135,7 +135,7 @@ export function QuizEditor({ quizId }: { quizId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <Button asChild variant="ghost" size="sm" className="self-start">
+      <Button asChild variant="ghost" size="sm" className="ml-12 self-start">
         <Link href="/admin">
           <ArrowLeftIcon />
           Zpět na kvízy
@@ -229,7 +229,7 @@ export function QuizEditor({ quizId }: { quizId: string }) {
           <li key={question.id}>
             <Card className="gap-4">
               <div className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/10 font-black">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-raised-strong font-black">
                   {index + 1}
                 </span>
 
@@ -289,7 +289,7 @@ export function QuizEditor({ quizId }: { quizId: string }) {
                         "flex items-center gap-2 rounded-lg border px-2.5 py-2 text-sm",
                         isCorrect
                           ? "border-success/60 bg-success/15 font-bold"
-                          : "border-white/10 bg-white/5",
+                          : "border-hairline bg-raised",
                       )}
                     >
                       <span

@@ -25,7 +25,7 @@ function RadioGroupItem({
   return (
     <RadioGroupPrimitive.Item
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-border bg-black/30 text-success-foreground outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:border-success data-[state=checked]:bg-success",
+        "flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-border bg-sunken text-success-foreground outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:border-success data-[state=checked]:bg-success",
         className,
       )}
       {...props}

@@ -24,7 +24,7 @@ function DialogContent({
       />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[92svh] w-[calc(100vw-2rem)] max-w-xl translate-x-[-50%] translate-y-[-50%] flex-col gap-5 overflow-y-auto rounded-xl border border-white/10 bg-card p-5 shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:p-6",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[92svh] w-[calc(100vw-2rem)] max-w-xl translate-x-[-50%] translate-y-[-50%] flex-col gap-5 overflow-y-auto rounded-xl border border-hairline bg-card p-5 shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:p-6",
           className,
         )}
         {...props}

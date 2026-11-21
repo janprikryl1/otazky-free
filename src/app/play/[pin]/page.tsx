@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import { Spinner } from "@/components/game/status-note";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import { PlayerGame } from "./player-game";
 
@@ -21,6 +22,7 @@ async function ResolvePin({
 export default function PlayPage(props: PageProps<"/play/[pin]">) {
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-5">
+      <ThemeToggle />
       <Suspense fallback={<Spinner label="Načítám hru…" />}>
         <ResolvePin params={props.params} />
       </Suspense>
