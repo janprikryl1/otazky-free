@@ -40,6 +40,9 @@ const { POST: advance } = await import(
 const { GET: adminState } = await import(
   "@/app/api/admin/sessions/[sessionId]/state/route"
 );
+const { DELETE: removePlayer } = await import(
+  "@/app/api/admin/sessions/[sessionId]/players/[playerId]/route"
+);
 
 const PASSWORD = process.env.ADMIN_PASSWORD as string;
 const UUID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
@@ -129,6 +132,10 @@ describe("ochrana admin endpointů", () => {
       listSessions(),
       adminState(new Request("http://test.local"), ctx({ sessionId: UUID })),
       advance(post({ action: "start" }), ctx({ sessionId: UUID })),
+      removePlayer(
+        new Request("http://test.local"),
+        ctx({ sessionId: UUID, playerId: UUID }),
+      ),
     ]);
 
     for (const response of responses) {
@@ -423,6 +430,108 @@ describe("řízení živé hry", () => {
       const response = await advance(post({ action }), ctx({ sessionId }));
       expect(response.status).toBe(400);
     }
+  });
+
+  it("odebere hráče z čekárny a sníží počítadlo", async () => {
+    const quizId = seedQuiz(db);
+    const { sessionId } = await body<{ sessionId: string }>(
+      await startSession(new Request("http://test.local"), ctx({ quizId })),
+    );
+    const anna = seedPlayer(db, sessionId, "Anna");
+    seedPlayer(db, sessionId, "Bob");
+
+    const data = await body<{
+      players: { nickname: string }[];
+      session: { playerCount: number };
+    }>(
+      await removePlayer(
+        new Request("http://test.local"),
+        ctx({ sessionId, playerId: anna }),
+      ),
+    );
+
+    expect(data.players.map((p) => p.nickname)).toEqual(["Bob"]);
+    expect(data.session.playerCount).toBe(1);
+    expect(db.tables.players).toHaveLength(1);
+  });
+
+  it("smaže i odpovědi odebraného hráče", async () => {
+    const quizId = seedQuiz(db);
+    const { sessionId } = await body<{ sessionId: string }>(
+      await startSession(new Request("http://test.local"), ctx({ quizId })),
+    );
+    const anna = seedPlayer(db, sessionId, "Anna");
+
+    db.tables.answers.push({
+      id: "a1",
+      session_id: sessionId,
+      question_id: db.tables.questions[0].id,
+      player_id: anna,
+      option_index: 0,
+      is_correct: true,
+      points: 900,
+      answered_at: new Date().toISOString(),
+    });
+
+    await removePlayer(
+      new Request("http://test.local"),
+      ctx({ sessionId, playerId: anna }),
+    );
+
+    expect(db.tables.answers).toHaveLength(0);
+  });
+
+  it("neodebere hráče z cizí hry", async () => {
+    const quizId = seedQuiz(db);
+    const { sessionId } = await body<{ sessionId: string }>(
+      await startSession(new Request("http://test.local"), ctx({ quizId })),
+    );
+    const other = await body<{ sessionId: string }>(
+      await startSession(
+        new Request("http://test.local"),
+        ctx({ quizId: seedQuiz(db) }),
+      ),
+    );
+    const cizi = seedPlayer(db, other.sessionId, "Cizinec");
+
+    const response = await removePlayer(
+      new Request("http://test.local"),
+      ctx({ sessionId, playerId: cizi }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(db.tables.players).toHaveLength(1);
+  });
+
+  it("odmítne neplatný identifikátor hráče", async () => {
+    const quizId = seedQuiz(db);
+    const { sessionId } = await body<{ sessionId: string }>(
+      await startSession(new Request("http://test.local"), ctx({ quizId })),
+    );
+
+    const response = await removePlayer(
+      new Request("http://test.local"),
+      ctx({ sessionId, playerId: "neco" }),
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("v dohrané hře už hráče odebrat nejde", async () => {
+    const quizId = seedQuiz(db);
+    const { sessionId } = await body<{ sessionId: string }>(
+      await startSession(new Request("http://test.local"), ctx({ quizId })),
+    );
+    const anna = seedPlayer(db, sessionId, "Anna");
+    await advance(post({ action: "finish" }), ctx({ sessionId }));
+
+    const response = await removePlayer(
+      new Request("http://test.local"),
+      ctx({ sessionId, playerId: anna }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(db.tables.players).toHaveLength(1);
   });
 
   it("vypíše rozehrané hry i s názvem kvízu", async () => {

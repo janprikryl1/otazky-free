@@ -8,6 +8,7 @@ import {
   PlayIcon,
   SquareIcon,
   UsersIcon,
+  XIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -72,6 +73,31 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
           await apiSend<AdminGameState>(
             `/api/admin/sessions/${sessionId}/advance`,
             { action },
+          ),
+        );
+      } catch (caught) {
+        if (!handleAuthError(caught)) {
+          setActionError(errorMessage(caught));
+          void refresh();
+        }
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [sessionId, refresh, setData, handleAuthError],
+  );
+
+  const removePlayer = useCallback(
+    async (playerId: string) => {
+      setIsBusy(true);
+      setActionError(null);
+
+      try {
+        setData(
+          await apiSend<AdminGameState>(
+            `/api/admin/sessions/${sessionId}/players/${playerId}`,
+            undefined,
+            "DELETE",
           ),
         );
       } catch (caught) {
@@ -155,7 +181,12 @@ export function HostConsole({ sessionId }: { sessionId: string }) {
       {error && !actionError ? <ErrorNote message={error} /> : null}
 
       {session.status === "lobby" ? (
-        <LobbyPhase state={data} isBusy={isBusy} onStart={() => act("start")} />
+        <LobbyPhase
+          state={data}
+          isBusy={isBusy}
+          onStart={() => act("start")}
+          onRemovePlayer={removePlayer}
+        />
       ) : null}
 
       {session.status === "question" ? (
@@ -179,10 +210,12 @@ function LobbyPhase({
   state,
   isBusy,
   onStart,
+  onRemovePlayer,
 }: {
   state: AdminGameState;
   isBusy: boolean;
   onStart: () => void;
+  onRemovePlayer: (playerId: string) => void;
 }) {
   const [origin, setOrigin] = useState("");
 
@@ -263,9 +296,27 @@ function LobbyPhase({
               {state.players.map((player) => (
                 <li
                   key={player.id}
-                  className="animate-pop-in rounded-full border border-primary/40 bg-primary/15 px-4 py-2 font-bold text-base"
+                  className="flex animate-pop-in items-center gap-1 rounded-full border border-primary/40 bg-primary/15 py-1 pr-1 pl-4 font-bold text-base"
                 >
                   {player.nickname}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    aria-label={`Odebrat hráče ${player.nickname}`}
+                    title="Odebrat ze hry"
+                    className="grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Odebrat hráče „${player.nickname}“ ze hry?`,
+                        )
+                      ) {
+                        onRemovePlayer(player.id);
+                      }
+                    }}
+                  >
+                    <XIcon className="size-4" />
+                  </button>
                 </li>
               ))}
             </ul>
