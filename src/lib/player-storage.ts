@@ -78,3 +78,30 @@ export function loadLastGamePin(): string | null {
   const pin = safeRead(LAST_GAME_KEY);
   return pin && /^[0-9]{6}$/.test(pin) ? pin : null;
 }
+
+/**
+ * Má se zapomenout uložený hráč a nabídnout nové přihlášení?
+ *
+ * Jen tehdy, když odpověď serveru opravdu patří k dotazu, který naše
+ * `playerId` nesl. Hned po připojení totiž chvíli visí starší odpověď
+ * načtená ještě bez `playerId` – ta `me: null` obsahuje vždy a sama
+ * o sobě neznamená, že hráč ve hře není.
+ */
+export function shouldForgetPlayer(params: {
+  /** Máme v `localStorage` uloženého hráče? */
+  hasStoredPlayer: boolean;
+  /** Vrátil server `me: null`? */
+  isMissingFromSession: boolean;
+  /** Adresa, ze které pochází zobrazená data. */
+  loadedUrl: string | null;
+  /** Adresa, kterou bychom se ptali teď (obsahuje `playerId`). */
+  currentUrl: string | null;
+}): boolean {
+  const { hasStoredPlayer, isMissingFromSession, loadedUrl, currentUrl } =
+    params;
+
+  if (!hasStoredPlayer || !isMissingFromSession) return false;
+  if (loadedUrl === null || currentUrl === null) return false;
+
+  return loadedUrl === currentUrl;
+}

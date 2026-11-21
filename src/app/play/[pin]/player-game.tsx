@@ -27,6 +27,7 @@ import {
   clearStoredPlayer,
   loadStoredPlayer,
   type StoredPlayer,
+  shouldForgetPlayer,
   storePlayer,
 } from "@/lib/player-storage";
 import type { PlayerGameState } from "@/lib/types";
@@ -59,34 +60,41 @@ export function PlayerGame({ pin }: { pin: string }) {
   // připojením ho zjistíme z prvního načtení stavu podle PINu.
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const { data, error, isLoading, refresh } = useLiveState<PlayerGameState>({
-    url: isHydrated ? stateUrl : null,
-    sessionId: player?.sessionId ?? sessionId,
-  });
+  const { data, error, isLoading, refresh, loadedUrl } =
+    useLiveState<PlayerGameState>({
+      url: isHydrated ? stateUrl : null,
+      sessionId: player?.sessionId ?? sessionId,
+    });
 
   useEffect(() => {
     if (data?.session.id) setSessionId(data.session.id);
   }, [data?.session.id]);
 
-  const handleJoined = useCallback(
-    (joined: StoredPlayer) => {
-      storePlayer(joined);
-      setPlayer(joined);
-      setNotice(null);
-      void refresh();
-    },
-    [refresh],
-  );
+  const handleJoined = useCallback((joined: StoredPlayer) => {
+    storePlayer(joined);
+    setPlayer(joined);
+    setNotice(null);
+    // Nenačítáme stav ručně – změnou hráče se změní i adresa dotazu
+    // a useLiveState si o nová data řekne sám. Ruční načtení by proběhlo
+    // ještě se starou adresou (bez playerId) a tvářilo by se, že hráč
+    // ve hře není.
+  }, []);
 
   // hráč už v této hře není (byla vyresetována) → nech ho přihlásit znovu
   useEffect(() => {
-    if (!player || !data) return;
-    if (data.me === null) {
-      clearStoredPlayer(pin);
-      setPlayer(null);
-      setNotice("Tvoje místo ve hře jsme nenašli – přihlas se prosím znovu.");
-    }
-  }, [data, player, pin]);
+    const forget = shouldForgetPlayer({
+      hasStoredPlayer: player !== null,
+      isMissingFromSession: data !== null && data.me === null,
+      loadedUrl,
+      currentUrl: stateUrl,
+    });
+
+    if (!forget) return;
+
+    clearStoredPlayer(pin);
+    setPlayer(null);
+    setNotice("Tvoje místo ve hře jsme nenašli – přihlas se prosím znovu.");
+  }, [data, player, pin, loadedUrl, stateUrl]);
 
   if (!hasValidPin) {
     return (

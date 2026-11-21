@@ -34,6 +34,9 @@ export function useLiveState<T>({
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // adresa, ze které pocházejí zobrazená data – volající podle ní pozná,
+  // jestli odpověď odpovídá tomu, na co se ptá teď
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
 
   const urlRef = useRef(url);
   urlRef.current = url;
@@ -48,6 +51,7 @@ export function useLiveState<T>({
     try {
       const next = await apiGet<T>(target);
       setData(next);
+      setLoadedUrl(target);
       setError(null);
     } catch (caught) {
       if (onErrorRef.current?.(caught) !== true) {
@@ -134,5 +138,5 @@ export function useLiveState<T>({
     };
   }, [url]);
 
-  return { data, error, isLoading, refresh, setData };
+  return { data, error, isLoading, refresh, setData, loadedUrl };
 }
